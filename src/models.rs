@@ -58,7 +58,7 @@ impl Database {
     }
 
     pub fn init(path: &str) -> Result<Self> {
-        let mut f = OpenOptions::new()
+        let f = OpenOptions::new()
             .read(true)
             .write(true)
             .create_new(true)
@@ -66,7 +66,9 @@ impl Database {
             .map_err(|err| err.kind());
 
         if let Err(io::ErrorKind::AlreadyExists) = f {
-            bail!("Failed to create new database, as one already exists");
+            // TODO: Colour output.
+            eprintln!("[-] ERROR: A database already exists in the target location, so you cannot initialise a new one there");
+            std::process::exit(1);
         } else if let Err(err) = f {
             bail!("Failed to initialise new database file: {}", err)
         }
@@ -74,7 +76,7 @@ impl Database {
         Ok(Self { logins: Vec::new() })
     }
 
-    pub fn add_new_interactive(&mut self) -> Result<()> {
+    pub fn add_new_interactive(mut self) -> Result<Self> {
         let theme = dialoguer::theme::ColorfulTheme::default();
 
         let name = Input::<String>::with_theme(&theme)
@@ -98,10 +100,10 @@ impl Database {
             password,
         });
 
-        Ok(())
+        Ok(self)
     }
 
-    pub fn query(&self, name: Option<&String>) {
+    pub fn query(self, name: Option<&String>) -> Self {
         if self.logins.is_empty() {
             let data = TableValue::Cell(String::from("No records"));
 
@@ -109,7 +111,7 @@ impl Database {
                 "{table}",
                 table = PoolTable::from(data).with(Style::rounded())
             );
-            return;
+            return self;
         }
 
         if let Some(name) = name {
@@ -130,12 +132,14 @@ impl Database {
                     "{table}",
                     table = PoolTable::from(data).with(Style::rounded())
                 );
-                return;
+                return self;
             }
             println!("{}", Table::new(logins).with(Style::rounded()))
         } else {
             println!("{}", Table::new(self.logins.iter()).with(Style::rounded()));
         }
+
+        return self;
     }
 
     pub fn sync(self, path: &str) -> Result<()> {

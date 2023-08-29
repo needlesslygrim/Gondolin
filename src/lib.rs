@@ -11,19 +11,22 @@ use args::{Cli, Subcommands::*};
 use models::Database;
 
 pub fn run(args: Cli) -> Result<()> {
-    let mut database: Database =
-        Database::open("db.ron").wrap_err("Failed to open the database")?;
-
     match args.subcommand {
-        New => database
+        Init => {
+            Database::init("db.ron").wrap_err("Failed to initialise database")?;
+        }
+        New => Database::open("db.ron")
+            .wrap_err("Failed to open database to add a login")?
             .add_new_interactive()
-            .wrap_err("Failed to add a new login to the database")?,
-        Query(name) => database.query(name.name.as_ref()),
-    }
-
-    database
-        .sync("db.ron")
-        .wrap_err("Failed to sync database to disk")?;
+            .wrap_err("Failed to add a new login to the database")?
+            .sync("db.ron")
+            .wrap_err("Failed to sync database to disk")?,
+        Query(name) => Database::open("db.ron")
+            .wrap_err("Failed to open database to query logins")?
+            .query(name.name.as_ref())
+            .sync("db.ron")
+            .wrap_err("Failed to sync database to disk")?,
+    };
 
     Ok(())
 }

@@ -12,6 +12,7 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Subcommands {
+    Init,
     New,
     Query(QueryArgs),
 }
