@@ -1,16 +1,18 @@
+use std::fmt::Display;
+
 use std::{
     fs::{File, OpenOptions},
     io::{self, BufReader, BufWriter, Read},
 };
 
 use color_eyre::eyre::{bail, Context, Result};
-use dialoguer::{Input, Password};
+use dialoguer::theme::ColorfulTheme;
+use dialoguer::{FuzzySelect, Input, Password};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use itertools::Itertools;
 use ron::ser::PrettyConfig;
 use serde_derive::{Deserialize, Serialize};
 use tabled::{
-    builder,
     settings::Style,
     tables::{PoolTable, TableValue},
     Table, Tabled,
@@ -26,6 +28,25 @@ pub struct Login {
     pub name: String,
     pub username: String,
     pub password: String,
+}
+
+impl Display for Login {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Login")
+            .field("name", &self.name)
+            .field("username", &self.username)
+            .finish()
+    }
+}
+
+impl Login {
+    pub fn new(name: String, username: String, password: String) -> Self {
+        Self {
+            name,
+            username,
+            password,
+        }
+    }
 }
 
 impl Database {
@@ -76,7 +97,7 @@ impl Database {
         Ok(Self { logins: Vec::new() })
     }
 
-    pub fn add_new_interactive(mut self) -> Result<Self> {
+    pub fn add_new_interactive(&mut self) -> Result<()> {
         let theme = dialoguer::theme::ColorfulTheme::default();
 
         let name = Input::<String>::with_theme(&theme)
@@ -94,16 +115,12 @@ impl Database {
             .interact()
             .wrap_err("Failed to read password from console")?;
 
-        self.logins.push(Login {
-            name,
-            username,
-            password,
-        });
-
-        Ok(self)
+        let new_login = Login::new(name, username, password);
+        self.logins.push(new_login);
+        Ok(())
     }
 
-    pub fn query(self, name: Option<&String>) -> Self {
+    pub fn query(&mut self, name: Option<&String>) {
         if self.logins.is_empty() {
             let data = TableValue::Cell(String::from("No records"));
 
@@ -111,7 +128,7 @@ impl Database {
                 "{table}",
                 table = PoolTable::from(data).with(Style::rounded())
             );
-            return self;
+            return;
         }
 
         if let Some(name) = name {
@@ -132,17 +149,36 @@ impl Database {
                     "{table}",
                     table = PoolTable::from(data).with(Style::rounded())
                 );
-                return self;
+                return;
             }
             println!("{}", Table::new(logins).with(Style::rounded()))
         } else {
             println!("{}", Table::new(self.logins.iter()).with(Style::rounded()));
         }
-
-        return self;
     }
 
-    pub fn sync(self, path: &str) -> Result<()> {
+    pub fn remove(&mut self, index: usize) -> Option<Login> {
+        if index >= self.logins.len() {
+            None
+        } else {
+            Some(self.logins.remove(index))
+        }
+    }
+
+    pub fn remove_interactive(&mut self) -> Result<Option<Login>> {
+        let choice = FuzzySelect::with_theme(&ColorfulTheme::default())
+            .items(&self.logins)
+            .interact_opt()
+            .wrap_err("Failed to read choice of login to be removed from console")?;
+
+        if let Some(index) = choice {
+            return Ok(Some(self.logins.remove(index)));
+        }
+
+        Ok(None)
+    }
+
+    pub fn sync(&self, path: &str) -> Result<()> {
         let f = OpenOptions::new()
             .write(true)
             .truncate(true)

@@ -8,7 +8,8 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.4.0", features = ["derive"] }
 color-eyre = "0.6.2"
-dialoguer = "0.10.4"
+dialoguer = {version = "0.10.4", features = ["fuzzy-select"] }
+fastrand = "2.0.0"
 fuzzy-matcher = "0.3.7"
 itertools = "0.11.0"
 ron = "0.8.1"

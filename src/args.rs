@@ -15,6 +15,7 @@ pub enum Subcommands {
     Init,
     New,
     Query(QueryArgs),
+    Remove,
 }
 
 #[derive(Parser, Debug)]
