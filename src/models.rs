@@ -10,6 +10,10 @@ use dialoguer::theme::ColorfulTheme;
 use dialoguer::{FuzzySelect, Input, Password};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use itertools::Itertools;
+#[cfg(feature = "paralell_queries")]
+use rayon::prelude::{
+    IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator, ParallelSliceMut,
+};
 use ron::ser::PrettyConfig;
 use serde_derive::{Deserialize, Serialize};
 use tabled::{
@@ -120,7 +124,28 @@ impl Database {
         Ok(())
     }
 
-    pub fn query(&mut self, name: Option<&String>) {
+    pub fn query(&self, name: &str) -> Vec<&Login> {
+        if self.logins.is_empty() {
+            return Vec::new();
+        }
+        let matcher = SkimMatcherV2::default();
+
+        let matches = self
+            .logins
+            .iter()
+            .map(|login| (login, matcher.fuzzy_match(&login.name, name)))
+            .filter(|login| login.1.is_some())
+            .sorted_by_key(|login| login.1)
+            .rev()
+            .map(|login| login.0);
+        if matches.len() != 0 {
+            return matches.collect::<Vec<&Login>>();
+        }
+
+        Vec::new()
+    }
+
+    pub fn query_interactive(&mut self, name: Option<&str>) {
         if self.logins.is_empty() {
             let data = TableValue::Cell(String::from("No records"));
 
@@ -132,17 +157,8 @@ impl Database {
         }
 
         if let Some(name) = name {
-            let matcher = SkimMatcherV2::default();
-
-            let logins = self
-                .logins
-                .iter()
-                .map(|login| (login, matcher.fuzzy_match(&login.name, name)))
-                .filter(|login| login.1.is_some())
-                .sorted_by_key(|login| login.1)
-                .rev()
-                .map(|login| login.0);
-            if logins.len() == 0 {
+            let matches = self.query(name);
+            if matches.is_empty() {
                 let data = TableValue::Cell(String::from("No records"));
 
                 println!(
@@ -151,7 +167,7 @@ impl Database {
                 );
                 return;
             }
-            println!("{}", Table::new(logins).with(Style::rounded()))
+            println!("{}", Table::new(matches).with(Style::rounded()))
         } else {
             println!("{}", Table::new(self.logins.iter()).with(Style::rounded()));
         }

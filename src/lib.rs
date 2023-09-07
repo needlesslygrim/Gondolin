@@ -4,6 +4,8 @@ use color_eyre::{eyre::Context, Result};
 
 pub mod args;
 mod models;
+#[cfg(feature = "web")]
+mod net;
 
 use args::Cli;
 use models::Database;
@@ -24,11 +26,13 @@ pub fn run(args: Cli) -> Result<()> {
         C::New => db
             .add_new_interactive()
             .wrap_err("Failed to add a new login to the database")?,
-        C::Query(name) => db.query(name.name.as_ref()),
+        C::Query(name) => db.query_interactive(name.name.as_ref().map(|str| str.as_str())),
         C::Remove => {
             db.remove_interactive()
                 .wrap_err("Failed to remove a login from the database interactively")?;
         }
+        #[cfg(feature = "web")]
+        C::Serve => net::serve(&mut db).wrap_err("Failed to serve webpage")?,
     };
 
     db.sync("db.ron")

@@ -16,6 +16,8 @@ pub enum Subcommands {
     New,
     Query(QueryArgs),
     Remove,
+    #[cfg(feature = "web")]
+    Serve,
 }
 
 #[derive(Parser, Debug)]
