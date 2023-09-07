@@ -124,6 +124,29 @@ impl Database {
         Ok(())
     }
 
+    #[cfg(feature = "paralell_queries")]
+    pub fn query(&self, name: &str) -> Vec<&Login> {
+        if self.logins.is_empty() {
+            return Vec::new();
+        }
+        let matcher = SkimMatcherV2::default();
+
+        let mut matches = self
+            .logins
+            .par_iter()
+            .map(|login| (login, matcher.fuzzy_match(&login.name, name)))
+            .filter(|login| login.1.is_some())
+            .collect::<Vec<(&Login, Option<i64>)>>();
+        matches.par_sort_unstable_by_key(|login| login.1);
+        let matches = matches.par_iter().rev().map(|login| login.0);
+        if matches.len() != 0 {
+            return matches.collect::<Vec<&Login>>();
+        }
+
+        Vec::new()
+    }
+
+    #[cfg(not(feature = "paralell_queries"))]
     pub fn query(&self, name: &str) -> Vec<&Login> {
         if self.logins.is_empty() {
             return Vec::new();
