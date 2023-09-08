@@ -8,7 +8,6 @@ use std::{
 use color_eyre::eyre::{bail, Context, Result};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{FuzzySelect, Input, Password};
-use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use itertools::Itertools;
 #[cfg(feature = "paralell_queries")]
 use rayon::prelude::{
@@ -40,6 +39,12 @@ impl Display for Login {
             .field("name", &self.name)
             .field("username", &self.username)
             .finish()
+    }
+}
+
+impl AsRef<str> for Login {
+    fn as_ref(&self) -> &str {
+        &self.name
     }
 }
 
@@ -126,21 +131,45 @@ impl Database {
 
     #[cfg(feature = "paralell_queries")]
     pub fn query(&self, name: &str) -> Vec<&Login> {
+        use std::iter;
+
         if self.logins.is_empty() {
             return Vec::new();
         }
-        let matcher = SkimMatcherV2::default();
 
-        let mut matches = self
-            .logins
-            .par_iter()
-            .map(|login| (login, matcher.fuzzy_match(&login.name, name)))
-            .filter(|login| login.1.is_some())
-            .collect::<Vec<(&Login, Option<i64>)>>();
-        matches.par_sort_unstable_by_key(|login| login.1);
-        let matches = matches.par_iter().rev().map(|login| login.0);
+        // TODO: Please fix ugly thank you :)
+        let mut matches: Vec<&Login>;
+        #[cfg(feature = "fuzzy_matcher_queries")]
+        {
+            use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
+            let matcher = SkimMatcherV2::default();
+
+            let mut intermediate = self
+                .logins
+                .par_iter()
+                .map(|login| (login, matcher.fuzzy_match(&login.name, name)))
+                .filter(|login| login.1.is_some())
+                .collect::<Vec<(&Login, Option<i64>)>>();
+            intermediate.par_sort_unstable_by_key(|login| login.1);
+            matches = intermediate.par_iter().rev().map(|login| login.0).collect();
+        }
+        #[cfg(feature = "nucleo_queries")]
+        {
+            use nucleo_matcher::{
+                pattern::{CaseMatching, Pattern},
+                Matcher,
+            };
+            let mut matcher = Matcher::new(nucleo_matcher::Config::DEFAULT);
+
+            matches = Pattern::parse(name, CaseMatching::Ignore)
+                .match_list(self.logins.iter(), &mut matcher)
+                .par_iter()
+                .map(|login| login.0)
+                .collect()
+        }
+
         if matches.len() != 0 {
-            return matches.collect::<Vec<&Login>>();
+            return matches;
         }
 
         Vec::new()
