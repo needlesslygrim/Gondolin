@@ -138,8 +138,8 @@ fn add_new(mut request: Request, db: &mut Database) {
         }
     };
 
-    let login: Result<Login, _> = serde_json::de::from_str(&content);
-    let login = if let Err(e) = login {
+    let logins: Result<Vec<Login>, _> = serde_json::de::from_str(&content);
+    let mut logins = if let Err(e) = logins {
         eprintln!("[-] WARN: Failed to parse login from request: {e}");
         if let Err(e) = request.respond(make_415()) {
             eprintln!("[|] WARN: Failed to respond to a request: {:#?}", e);
@@ -148,10 +148,10 @@ fn add_new(mut request: Request, db: &mut Database) {
         return;
     } else {
         // Should be fine :).
-        unsafe { login.unwrap_unchecked() }
+        unsafe { logins.unwrap_unchecked() }
     };
 
-    db.logins.push(login);
+    db.logins.append(&mut logins);
     if let Err(e) = request.respond(
         Response::from_string(StatusCode(200).default_reason_phrase())
             .with_status_code(StatusCode(200)),
