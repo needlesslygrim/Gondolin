@@ -3,7 +3,7 @@ use std::io::{BufReader, Read};
 use color_eyre::eyre::{Result, WrapErr};
 use tiny_http::{Header, Request, Response, StatusCode};
 
-use crate::models::Database;
+use crate::models::{Database, Login};
 
 pub fn serve(db: &mut Database) -> Result<()> {
     let ip = "127.0.0.1:56423";
@@ -32,6 +32,7 @@ pub fn serve(db: &mut Database) -> Result<()> {
                 "text/css; charset=utf8",
             ),
             (M::Get, "/api/query") => serve_query(request, db),
+            (M::Post, "/api/new") => add_new(request, db),
             _ => serve_404(request),
         }
     }
@@ -74,6 +75,7 @@ fn serve_query(mut request: Request, db: &Database) {
         {
             eprintln!("[|] WARN: Failed to respond to a request: {:#?}", e);
         }
+
         return;
     }
 
@@ -86,6 +88,81 @@ fn serve_query(mut request: Request, db: &Database) {
     if let Err(e) = request.respond(response) {
         eprintln!("[|] WARN: Failed to respond to a request: {:#?}", e);
     };
+}
+
+fn add_new(mut request: Request, db: &mut Database) {
+    let body_length = request.body_length().map(|length| length / 8).unwrap_or(0);
+    let mut buf: Vec<u8> = Vec::with_capacity(body_length);
+    let maybe_content_type = request
+        .headers()
+        .iter()
+        .find(|header| header.field.as_str() == "Content-Type");
+    let content_type_header = if maybe_content_type.is_none() {
+        eprintln!("[|] WARN: A request was made to `/api/new` without a `Content-Type` header");
+        if let Err(e) = request.respond(make_415()) {
+            eprintln!("[|] WARN: Failed to respond to a request: {:#?}", e);
+            return;
+        }
+        return;
+    } else {
+        // Should be fine :^)
+        unsafe { maybe_content_type.unwrap_unchecked() }
+    };
+
+    if content_type_header.value != "application/json" {
+        eprintln!("[|] WARN: A request was made to `/api/new` without a valid `Content-Type` of `application/json`");
+        if let Err(e) = request.respond(make_415()) {
+            eprintln!("[|] WARN: Failed to respond to a request: {:#?}", e);
+            return;
+        }
+        return;
+    }
+
+    if let Err(e) = request.as_reader().read_to_end(&mut buf) {
+        eprintln!("[|] WARN: Could not read the body of the request: {:#?}", e);
+        if let Err(e) = request.respond(make_415()) {
+            eprintln!("[|] WARN: Failed to respond to a request: {:#?}", e);
+            return;
+        }
+        return;
+    }
+
+    let content = match String::from_utf8(buf) {
+        Ok(content) => content,
+        Err(e) => {
+            eprintln!(
+                "[|] WARN: The body of a request could not be interpreted as UTF-8: {:#?}",
+                e
+            );
+            return;
+        }
+    };
+
+    let login: Result<Login, _> = serde_json::de::from_str(&content);
+    let login = if let Err(e) = login {
+        eprintln!("[-] WARN: Failed to parse login from request: {e}");
+        if let Err(e) = request.respond(make_415()) {
+            eprintln!("[|] WARN: Failed to respond to a request: {:#?}", e);
+            return;
+        }
+        return;
+    } else {
+        // Should be fine :).
+        unsafe { login.unwrap_unchecked() }
+    };
+
+    db.logins.push(login);
+    if let Err(e) = request.respond(
+        Response::from_string(StatusCode(200).default_reason_phrase())
+            .with_status_code(StatusCode(200)),
+    ) {
+        eprintln!("[|] WARN: Failed to respond to a request: {:#?}", e);
+    };
+}
+
+#[inline(always)]
+fn make_415() -> Response<std::io::Cursor<std::vec::Vec<u8>>> {
+    Response::from_string(StatusCode(415).default_reason_phrase()).with_status_code(StatusCode(415))
 }
 
 fn serve_404(request: Request) {
