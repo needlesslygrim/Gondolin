@@ -1,3 +1,6 @@
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+
 use std::hint::unreachable_unchecked;
 
 use color_eyre::{eyre::Context, Result};
@@ -26,7 +29,7 @@ pub fn run(args: Cli) -> Result<()> {
         C::New => db
             .add_new_interactive()
             .wrap_err("Failed to add a new login to the database")?,
-        C::Query(name) => db.query_interactive(name.name.as_ref().map(|str| str.as_str())),
+        C::Query(name) => db.query_interactive(name.name.as_deref()),
         C::Remove => {
             db.remove_interactive()
                 .wrap_err("Failed to remove a login from the database interactively")?;

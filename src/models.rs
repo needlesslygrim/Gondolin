@@ -8,11 +8,6 @@ use std::{
 use color_eyre::eyre::{bail, Context, Result};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{FuzzySelect, Input, Password};
-use itertools::Itertools;
-#[cfg(feature = "paralell_queries")]
-use rayon::prelude::{
-    IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator, ParallelSliceMut,
-};
 use ron::ser::PrettyConfig;
 use serde_derive::{Deserialize, Serialize};
 use tabled::{
@@ -20,6 +15,9 @@ use tabled::{
     tables::{PoolTable, TableValue},
     Table, Tabled,
 };
+
+#[cfg(feature = "paralell_queries")]
+use rayon::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Database {
@@ -66,9 +64,8 @@ impl Database {
             if *err == io::ErrorKind::NotFound {
                 return Self::init(path)
                     .wrap_err("Failed to initialise new database in `Database::open`");
-            } else {
-                bail!("Failed to open existing database: {err}")
             }
+            bail!("Failed to open existing database: {err}")
         }
 
         let mut reader = BufReader::new(f.as_ref().unwrap());
@@ -77,7 +74,7 @@ impl Database {
             .read_to_string(&mut contents)
             .wrap_err("Failed to read existing database")?;
 
-        // ugly.
+        // less ugly than before.
         let db = if contents.is_empty() {
             Self { logins: Vec::new() }
         } else {
@@ -131,14 +128,12 @@ impl Database {
 
     #[cfg(feature = "paralell_queries")]
     pub fn query(&self, name: &str) -> Vec<&Login> {
-        use std::iter;
-
         if self.logins.is_empty() {
             return Vec::new();
         }
 
         // TODO: Please fix ugly thank you :)
-        let mut matches: Vec<&Login>;
+        let matches: Vec<&Login>;
         #[cfg(feature = "fuzzy_matcher_queries")]
         {
             use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
@@ -165,10 +160,10 @@ impl Database {
                 .match_list(self.logins.iter(), &mut matcher)
                 .par_iter()
                 .map(|login| login.0)
-                .collect()
+                .collect();
         }
 
-        if matches.len() != 0 {
+        if !matches.is_empty() {
             return matches;
         }
 
@@ -219,7 +214,7 @@ impl Database {
                 );
                 return;
             }
-            println!("{}", Table::new(matches).with(Style::rounded()))
+            println!("{}", Table::new(matches).with(Style::rounded()));
         } else {
             println!("{}", Table::new(self.logins.iter()).with(Style::rounded()));
         }
@@ -229,7 +224,7 @@ impl Database {
         if index >= self.logins.len() {
             None
         } else {
-            Some(self.logins.remove(index))
+            Some(self.logins.swap_remove(index))
         }
     }
 
@@ -240,7 +235,7 @@ impl Database {
             .wrap_err("Failed to read choice of login to be removed from console")?;
 
         if let Some(index) = choice {
-            return Ok(Some(self.logins.remove(index)));
+            return Ok(Some(self.logins.swap_remove(index)));
         }
 
         Ok(None)
