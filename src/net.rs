@@ -1,3 +1,5 @@
+use std::fs;
+use std::hint::unreachable_unchecked;
 use std::io::{BufReader, Cursor, Read};
 
 use color_eyre::eyre::{Result, WrapErr};
@@ -16,21 +18,7 @@ pub fn serve(db: &mut Database) -> Result<()> {
     for request in server.incoming_requests() {
         use tiny_http::Method as M;
         match (request.method(), request.url()) {
-            (M::Get, "/") => serve_bytes(
-                request,
-                &include_bytes!("index.html")[..],
-                "text/html; charset=utf8",
-            ),
-            (M::Get, "/index.js") => serve_bytes(
-                request,
-                &include_bytes!("index.js")[..],
-                "text/javascript; charset=utf8",
-            ),
-            // (M::Get, "/index.css") => serve_bytes(
-            //     request,
-            //     &include_bytes!("../dist/output.css")[..],
-            //     "text/css; charset=utf8",
-            // ),
+            (M::Get, "/" | "/index.js" | "/index.css") => serve_static(request),
             (M::Get, "/api/query") => serve_query(request, db),
             (M::Post, "/api/new") => add_new(request, db),
             (M::Delete, "/api/remove") => remove_login(request, db),
@@ -38,6 +26,57 @@ pub fn serve(db: &mut Database) -> Result<()> {
         }
     }
     Ok(())
+}
+
+// In debug mode, we can do a sort of "hot-reloading", by just reopening the same files
+// over and over again. Therefore, we can use `unwrap()`, as in my opinion, if someone
+// is editing this project's code, and doesn't have these files in the right places, it's
+// their fault, and it's my project so I can do what I like :^).
+#[cfg(debug_assertions)]
+fn serve_static(request: Request) {
+    eprintln!("[+] INFO: Serving in debug mode");
+    match request.url() {
+        "/" => serve_bytes(
+            request,
+            fs::read("src/index.html").unwrap().as_slice(),
+            "text/html; charset=utf8",
+        ),
+        "/index.js" => serve_bytes(
+            request,
+            fs::read("dist/index.js").unwrap().as_slice(),
+            "text/javascript; charset=utf8",
+        ),
+        // "/index.css" => serve_bytes(
+        //     request,
+        //     fs::read("dist/index.css").unwrap().as_slice(),
+        //     "text/css; charset=utf8",
+        // ),
+        _ => unsafe { unreachable_unchecked() },
+    };
+}
+
+// Release mode version of the previous function. Here, it uses `include_bytes!()` to
+// pack the content of the files into the binary.
+#[cfg(not(debug_assertions))]
+fn serve_static(request: Request) {
+    match request.url() {
+        "/" => serve_bytes(
+            request,
+            &include_bytes!("index.html")[..],
+            "text/html; charset=utf8",
+        ),
+        "/index.js" => serve_bytes(
+            request,
+            &include_bytes!("index.js")[..],
+            "text/javascript; charset=utf8",
+        ),
+        // "/index.css" => serve_bytes(
+        //     request,
+        //     &include_bytes!("../dist/output.css")[..],
+        //     "text/css; charset=utf8",
+        // ),
+        _ => unsafe { unreachable_unchecked() },
+    }
 }
 
 fn serve_bytes(request: Request, content: &[u8], content_type: &str) {
