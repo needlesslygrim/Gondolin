@@ -1,9 +1,11 @@
 use std::fs;
 use std::hint::unreachable_unchecked;
-use std::io::{BufReader, Cursor, Read};
+use std::io::Cursor;
+use std::str::FromStr;
 
 use color_eyre::eyre::{Result, WrapErr};
 use tiny_http::{Header, Request, Response, StatusCode};
+use url::Url;
 
 use crate::models::{Database, Login};
 
@@ -14,14 +16,36 @@ pub fn serve(db: &mut Database) -> Result<()> {
         .wrap_err_with(|| format!("Failed to start server at {ip}"))?;
 
     eprintln!("[+] INFO: Serving webpage at {ip}");
-
     for request in server.incoming_requests() {
         use tiny_http::Method as M;
-        match (request.method(), request.url()) {
-            (M::Get, "/" | "/index.js" | "/index.css") => serve_static(request),
-            (M::Get, "/api/query") => serve_query(request, db),
-            (M::Post, "/api/new") => add_new(request, db),
-            (M::Delete, "/api/remove") => remove_login(request, db),
+        let url = match Url::from_str("https://notarealdomain.gb")
+            .expect("pls don't put rubbish in here")
+            .join(request.url())
+        {
+            Ok(url) => url,
+            Err(e) => {
+                eprintln!(
+                    "[-] WARN; Failed to parse a url: `{}`, with err: {}",
+                    request.url(),
+                    e
+                );
+                std::process::exit(1)
+            }
+        };
+        match (request.method(), url.path()) {
+            (M::Get, "/" | "/index.js" | "/index.js.map" | "/src/index.ts" | "/index.css") => {
+                serve_static(request)
+            }
+            (M::Get, "/api/v1/query") => serve_query(
+                request,
+                url.query_pairs()
+                    .find(|query| query.0 == "query")
+                    .map(|query| query.1)
+                    .as_deref(),
+                db,
+            ),
+            (M::Post, "/api/v1/new") => add_new(request, db),
+            (M::Delete, "/api/v1/remove") => remove_login(request, db),
             _ => serve_404(request),
         }
     }
@@ -34,7 +58,6 @@ pub fn serve(db: &mut Database) -> Result<()> {
 // their fault, and it's my project so I can do what I like :^).
 #[cfg(debug_assertions)]
 fn serve_static(request: Request) {
-    eprintln!("[+] INFO: Serving in debug mode");
     match request.url() {
         "/" => serve_bytes(
             request,
@@ -46,11 +69,21 @@ fn serve_static(request: Request) {
             fs::read("dist/index.js").unwrap().as_slice(),
             "text/javascript; charset=utf8",
         ),
-        // "/index.css" => serve_bytes(
-        //     request,
-        //     fs::read("dist/index.css").unwrap().as_slice(),
-        //     "text/css; charset=utf8",
-        // ),
+        "/index.js.map" => serve_bytes(
+            request,
+            fs::read("dist/index.js.map").unwrap().as_slice(),
+            "application/json; charset=utf8",
+        ),
+        "/src/index.ts" => serve_bytes(
+            request,
+            fs::read("src/index.ts").unwrap().as_slice(),
+            "text/plain; charset=utf8",
+        ),
+        "/index.css" => serve_bytes(
+            request,
+            fs::read("dist/index.css").unwrap().as_slice(),
+            "text/css; charset=utf8",
+        ),
         _ => unsafe { unreachable_unchecked() },
     };
 }
@@ -67,14 +100,24 @@ fn serve_static(request: Request) {
         ),
         "/index.js" => serve_bytes(
             request,
-            &include_bytes!("index.js")[..],
+            &include_bytes!("../dist/index.js")[..],
             "text/javascript; charset=utf8",
         ),
-        // "/index.css" => serve_bytes(
-        //     request,
-        //     &include_bytes!("../dist/output.css")[..],
-        //     "text/css; charset=utf8",
-        // ),
+        "/index.js.map" => serve_bytes(
+            request,
+            &include_bytes!("../dist/index.js.map")[..],
+            "application/json; charset=utf8",
+        ),
+        "/src/index.ts" => serve_bytes(
+            request,
+            &include_bytes!("index.ts")[..],
+            "text/javascript; charset=utf8",
+        ),
+        "/index.css" => serve_bytes(
+            request,
+            &include_bytes!("../dist/index.css")[..],
+            "text/css; charset=utf8",
+        ),
         _ => unsafe { unreachable_unchecked() },
     }
 }
@@ -93,22 +136,8 @@ fn serve_bytes(request: Request, content: &[u8], content_type: &str) {
 // However, for now there's probably not much point since we're the only ones consuming this API. Therefore
 // we just ignore all headers, and send back `application/json`.
 // TODO: Maybe look at checking the header to at least see if JSON was requested, and if not return 415 with `Accept-Post` set.
-fn serve_query(mut request: Request, db: &Database) {
-    let body_length = request.body_length().map_or(0, |size| size / 8);
-    let mut buf_reader = BufReader::new(request.as_reader());
-    let mut content = String::with_capacity(body_length);
-
-    if let Err(e) = buf_reader.read_to_string(&mut content) {
-        eprintln!("[-] WARN: Failed to read content body of a request: {e}");
-        if let Err(e) = request.respond(
-            Response::from_string(StatusCode(500).default_reason_phrase()).with_status_code(500),
-        ) {
-            eprintln!("[|] WARN: Failed to respond to a request: {e:#?}");
-        }
-        return;
-    }
-
-    let matches = db.query(&content);
+fn serve_query(request: Request, query: Option<&str>, db: &Database) {
+    let matches = db.query(query);
     let body = serde_json::ser::to_string(&matches);
 
     if let Err(e) = body {

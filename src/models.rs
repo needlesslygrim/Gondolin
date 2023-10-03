@@ -127,10 +127,15 @@ impl Database {
     }
 
     #[cfg(feature = "paralell_queries")]
-    pub fn query(&self, name: &str) -> Vec<&Login> {
+    pub fn query(&self, name: Option<&str>) -> Vec<&Login> {
         if self.logins.is_empty() {
             return Vec::new();
         }
+
+        let Some(name) = name else {
+            // TODO: Find out if this requires allocation.
+            return self.logins.iter().collect();
+        };
 
         // TODO: Please fix ugly thank you :)
         let matches: Vec<&Login>;
@@ -204,7 +209,7 @@ impl Database {
         }
 
         if let Some(name) = name {
-            let matches = self.query(name);
+            let matches = self.query(Some(name));
             if matches.is_empty() {
                 let data = TableValue::Cell(String::from("No records"));
 
