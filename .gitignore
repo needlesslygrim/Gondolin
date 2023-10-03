@@ -1,1 +1,5 @@
 /target
+/db.ron
+/db-big.ron
+/db-small.ron
+/node_modules

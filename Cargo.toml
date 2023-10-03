@@ -1,29 +1,38 @@
 [package]
-name = "safe"
+name = "gondolin"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.4.0", features = ["derive"] }
-color-eyre = "0.6.2"
-dialoguer = { version = "0.10.4", features = ["fuzzy-select"] }
+# General
 fastrand = "2.0.0"
 fuzzy-matcher = { version = "0.3.7", optional = true }
 itertools = "0.11.0"
 nucleo-matcher = { version = "0.2.0", optional = true }
-rayon = {version = "1.7.0", optional = true }
+rayon = { version = "1.7.0", optional = true }
 ron = "0.8.1"
 serde = "1.0.188"
 serde_derive = "1.0.188"
-serde_json = "1.0.105"
+
+# CLI
+clap = { version = "4.4.0", features = ["derive"] }
+color-eyre = "0.6.2"
+dialoguer = { version = "0.10.4", features = ["fuzzy-select"] }
 tabled = "0.14.0"
+
+# Web
 tiny_http = { version  = "0.12.0", optional = true }
+url = { version = "2.4.1", optional = true }
+serde_json = { version = "1.0.105" , optional = true }
 
 [features]
-web = ["tiny_http"]
+web = ["tiny_http", "url", "serde_json"]
 paralell_queries = ["rayon"]
 nucleo_queries = ["nucleo-matcher"]
 fuzzy_matcher_queries = ["fuzzy-matcher"]
 default = ["web", "paralell_queries", "nucleo_queries"]
+
+[profile.release]
+opt-level = "z"
