@@ -8,13 +8,13 @@ edition = "2021"
 [dependencies]
 # General
 fastrand = "2.0.0"
-fuzzy-matcher = { version = "0.3.7", optional = true }
 itertools = "0.11.0"
 nucleo-matcher = { version = "0.2.0", optional = true }
 rayon = { version = "1.7.0", optional = true }
 ron = "0.8.1"
 serde = "1.0.188"
 serde_derive = "1.0.188"
+uuid = { version = "1.4.1" , features = ["v4", "serde"]}
 
 # CLI
 clap = { version = "4.4.0", features = ["derive"] }
@@ -31,7 +31,6 @@ serde_json = { version = "1.0.105" , optional = true }
 web = ["tiny_http", "url", "serde_json"]
 paralell_queries = ["rayon"]
 nucleo_queries = ["nucleo-matcher"]
-fuzzy_matcher_queries = ["fuzzy-matcher"]
 default = ["web", "paralell_queries", "nucleo_queries"]
 
 [profile.release]

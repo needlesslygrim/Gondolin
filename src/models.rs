@@ -1,5 +1,5 @@
+use std::collections::HashMap;
 use std::fmt::Display;
-
 use std::{
     fs::{File, OpenOptions},
     io::{self, BufReader, BufWriter, Read},
@@ -15,13 +15,14 @@ use tabled::{
     tables::{PoolTable, TableValue},
     Table, Tabled,
 };
+use uuid::Uuid;
 
 #[cfg(feature = "paralell_queries")]
 use rayon::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Database {
-    pub logins: Vec<Login>,
+    pub logins: HashMap<Uuid, Login>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Tabled)]
@@ -56,6 +57,22 @@ impl Login {
     }
 }
 
+// A tuple struct which simply allows us to have custom `Deref` behaviour on a `(&Uuid, &Login)`.
+// We need this because of how nucleo works.
+struct LoginAndId<'a>(&'a Uuid, &'a Login);
+
+impl<'a> From<(&'a Uuid, &'a Login)> for LoginAndId<'a> {
+    fn from(value: (&'a Uuid, &'a Login)) -> Self {
+        Self(value.0, value.1)
+    }
+}
+
+impl<'a> AsRef<str> for LoginAndId<'a> {
+    fn as_ref(&self) -> &str {
+        &self.1.name
+    }
+}
+
 impl Database {
     pub fn open(path: &str) -> Result<Self> {
         let mut f = File::open(path).map_err(|err| err.kind());
@@ -76,7 +93,9 @@ impl Database {
 
         // less ugly than before.
         let db = if contents.is_empty() {
-            Self { logins: Vec::new() }
+            Self {
+                logins: HashMap::new(),
+            }
         } else {
             ron::from_str::<Database>(&contents).wrap_err("Failed to parse existing database")?
         };
@@ -100,7 +119,16 @@ impl Database {
             bail!("Failed to initialise new database file: {}", err)
         }
 
-        Ok(Self { logins: Vec::new() })
+        Ok(Self {
+            logins: HashMap::new(),
+        })
+    }
+
+    pub fn add(&mut self, login: Login) {
+        let id = Uuid::new_v4();
+        // TODO: However unlikely it is that there will be a collision, do proper things here.
+        let old_val = self.logins.insert(id, login);
+        assert!(old_val.is_none());
     }
 
     pub fn add_new_interactive(&mut self) -> Result<()> {
@@ -122,12 +150,24 @@ impl Database {
             .wrap_err("Failed to read password from console")?;
 
         let new_login = Login::new(name, username, password);
-        self.logins.push(new_login);
+        self.add(new_login);
         Ok(())
     }
 
+    // TODO: Find a way to use a slice here.
+    pub fn append(&mut self, logins: Vec<Login>) {
+        for login in logins {
+            self.add(login);
+        }
+    }
+
     #[cfg(feature = "paralell_queries")]
-    pub fn query(&self, name: Option<&str>) -> Vec<&Login> {
+    pub fn query(&self, name: Option<&str>) -> Vec<(&Uuid, &Login)> {
+        use nucleo_matcher::{
+            pattern::{CaseMatching, Pattern},
+            Matcher,
+        };
+
         if self.logins.is_empty() {
             return Vec::new();
         }
@@ -136,37 +176,14 @@ impl Database {
             // TODO: Find out if this requires allocation.
             return self.logins.iter().collect();
         };
-
-        // TODO: Please fix ugly thank you :)
-        let matches: Vec<&Login>;
-        #[cfg(feature = "fuzzy_matcher_queries")]
-        {
-            use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
-            let matcher = SkimMatcherV2::default();
-
-            let mut intermediate = self
-                .logins
-                .par_iter()
-                .map(|login| (login, matcher.fuzzy_match(&login.name, name)))
-                .filter(|login| login.1.is_some())
-                .collect::<Vec<(&Login, Option<i64>)>>();
-            intermediate.par_sort_unstable_by_key(|login| login.1);
-            matches = intermediate.par_iter().rev().map(|login| login.0).collect();
-        }
-        #[cfg(feature = "nucleo_queries")]
-        {
-            use nucleo_matcher::{
-                pattern::{CaseMatching, Pattern},
-                Matcher,
-            };
-            let mut matcher = Matcher::new(nucleo_matcher::Config::DEFAULT);
-
-            matches = Pattern::parse(name, CaseMatching::Ignore)
-                .match_list(self.logins.iter(), &mut matcher)
-                .par_iter()
-                .map(|login| login.0)
-                .collect();
-        }
+        let mut matcher = Matcher::new(nucleo_matcher::Config::DEFAULT);
+        let iter: Vec<LoginAndId> = self.logins.iter().map(|tuple| tuple.into()).collect();
+        let matches: Vec<(&Uuid, &Login)> = Pattern::parse(name, CaseMatching::Ignore)
+            .match_list(iter, &mut matcher)
+            .par_iter()
+            .map(|(login, _)| login)
+            .map(|login| (login.0, login.1))
+            .collect();
 
         if !matches.is_empty() {
             return matches;
@@ -209,7 +226,12 @@ impl Database {
         }
 
         if let Some(name) = name {
-            let matches = self.query(Some(name));
+            // Fix?
+            let matches: Vec<&Login> = self
+                .query(Some(name))
+                .iter()
+                .map(|(_, login)| *login)
+                .collect();
             if matches.is_empty() {
                 let data = TableValue::Cell(String::from("No records"));
 
@@ -221,26 +243,33 @@ impl Database {
             }
             println!("{}", Table::new(matches).with(Style::rounded()));
         } else {
-            println!("{}", Table::new(self.logins.iter()).with(Style::rounded()));
+            println!(
+                "{}",
+                Table::new(self.logins.values()).with(Style::rounded())
+            );
         }
     }
 
-    pub fn remove(&mut self, index: usize) -> Option<Login> {
-        if index >= self.logins.len() {
-            None
-        } else {
-            Some(self.logins.swap_remove(index))
-        }
+    pub fn remove(&mut self, id: Uuid) -> Option<Login> {
+        self.logins.remove(&id)
     }
 
     pub fn remove_interactive(&mut self) -> Result<Option<Login>> {
+        let options: Vec<_> = self.logins.iter().collect();
         let choice = FuzzySelect::with_theme(&ColorfulTheme::default())
-            .items(&self.logins)
+            .items(
+                options
+                    .iter()
+                    .map(|(_, login)| login)
+                    .collect::<Vec<&&Login>>()
+                    .as_slice(),
+            )
             .interact_opt()
             .wrap_err("Failed to read choice of login to be removed from console")?;
 
         if let Some(index) = choice {
-            return Ok(Some(self.logins.swap_remove(index)));
+            let id = *options[index].0;
+            return Ok(self.logins.remove(&id));
         }
 
         Ok(None)
