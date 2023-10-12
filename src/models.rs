@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::io::{ErrorKind, Write};
+use std::path::{Path, PathBuf};
 use std::{
+    fs,
     fs::{File, OpenOptions},
     io::{self, BufReader, BufWriter, Read},
 };
@@ -8,8 +11,8 @@ use std::{
 use color_eyre::eyre::{bail, Context, Result};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{FuzzySelect, Input, Password};
-use ron::ser::PrettyConfig;
 use serde_derive::{Deserialize, Serialize};
+use serde_with::serde_as;
 use tabled::{
     settings::Style,
     tables::{PoolTable, TableValue},
@@ -20,9 +23,160 @@ use uuid::Uuid;
 #[cfg(feature = "paralell_queries")]
 use rayon::prelude::*;
 
-#[derive(Debug, Serialize, Deserialize)]
+use crate::errors::GondolinError;
+
+#[derive(Serialize, Deserialize)]
+pub struct Config {
+    pub path: PathBuf,
+    #[cfg(feature = "web")]
+    pub port: u16,
+}
+
+static DATABASE_FILE_NAME: &'static str = "gondolin.db";
+static CONFIG_FILE_NAME: &'static str = "gondolin.toml";
+
+impl Config {
+    fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let f = File::open(&path).wrap_err("Failed to open configuration file")?;
+        let mut reader = BufReader::new(f);
+        let mut buf = String::with_capacity(
+            fs::metadata(&path)
+                .wrap_err("Failed to get metadata of configuration file")?
+                .len() as usize,
+        );
+        reader
+            .read_to_string(&mut buf)
+            .wrap_err("Failed to read configuration file")?;
+
+        toml::de::from_str(&buf).wrap_err("Failed to parse configuration file")
+    }
+
+    pub(crate) fn open_interactive(path: &Path) -> Result<Self> {
+        let theme = dialoguer::theme::ColorfulTheme::default();
+        let metadata = match fs::metadata(&path) {
+            Ok(metadata) => metadata,
+            Err(err) => match err.kind() {
+                ErrorKind::NotFound => {
+                    // Not doing this for now.
+                    eprintln!("You have not initialised Gondolin yet, please run `gondolin init` to initialise, then run this command again.");
+                    std::process::exit(0);
+                    /*                    let init = dialoguer::Confirm::with_theme(&theme).with_prompt("Do you want to initialise a database and a configuration file?").interact_opt().wrap_err("Failed to read choice of whether to initialise a configuration and database")?;
+                    if init.is_some_and(|init| init == false) || init.is_none() {
+                        bail!(GondolinError::RefuseInitialisationError);
+                    }
+
+                    return Self::init_interactive(Path::new(path)).wrap_err(
+                        "Failed to initialise interactively after user chose to initialise ",
+                    );*/
+                }
+                _ => {
+                    bail!(err)
+                }
+            },
+        };
+
+        let mut buf = String::with_capacity(metadata.len() as usize);
+        let mut reader =
+            BufReader::new(File::open(&path).wrap_err("Failed to open configuration file")?);
+        reader
+            .read_to_string(&mut buf)
+            .wrap_err("Failed to read configuration file")?;
+
+        toml::de::from_str(&buf).wrap_err("Failed to parse configuration file")
+    }
+
+    pub fn init(path: &Path, config: &Config) -> Result<()> {
+        let exists = path
+            .try_exists()
+            .wrap_err("Failed to check whether the configuration file already exists")?;
+
+        if exists {
+            bail!(GondolinError::ConfigAlreadyExistsError);
+        }
+
+        let mut writer =
+            BufWriter::new(File::create(path).wrap_err("Failed to create configuration file")?);
+        let buf = toml::ser::to_string_pretty(config)
+            .wrap_err("Failed to serialise configuration file")?;
+        writer
+            .write_all(buf.as_bytes())
+            .wrap_err("Failed to write configuration file")?;
+
+        Ok(())
+    }
+
+    pub(crate) fn init_interactive(path: &Path, db_path: &Path) -> Result<Self> {
+        let theme = ColorfulTheme::default();
+
+        // Removed for now since it's a bit stupid.
+        /*        let database_dir = Input::<String>::with_theme(&theme)
+        .with_prompt("Enter the directory to store the database in")
+        .default(
+            default_database_dir.parent()
+                .ok_or(eyre!("Default config directory has no parent"))?
+                // TODO: Not to do this :^).
+                .to_string_lossy()
+                .to_string(),
+        )
+        .allow_empty(false)
+        .validate_with(|dir: &String| -> std::result::Result<(), &str> {
+            let dir = Path::new(dir);
+
+            if dir.try_exists().is_ok_and(|exists| exists == false) {
+                return Err("Directory does not exist")
+            }
+            if !dir.is_dir() {
+                return Err("Entered path is not a directory");
+            }
+
+            match fs::read_dir(&dir).map_err(|err| err.kind()) {
+                Ok(_) => (),
+                Err(err) => return match err {
+                    ErrorKind::PermissionDenied => Err("The current process does not have permission to read from this directory"),
+                    _ => Err("There was a problem when checking this directory")
+                }
+            }
+
+
+           Ok(())
+        })
+        .interact_text()
+        .wrap_err("Failed to get path")?;*/
+
+        #[cfg(feature = "web")]
+        let port = dialoguer::Input::<u16>::with_theme(&theme)
+            .with_prompt("Enter the port number for the server")
+            .default(56423)
+            .validate_with(|port: &u16| {
+                if 0 < *port && *port < u16::MAX {
+                    Ok(())
+                } else {
+                    Err("Not a valid port number")
+                }
+            })
+            .allow_empty(false)
+            .interact_text()
+            .wrap_err("Failed to get port number")?;
+
+        let config = Config {
+            path: PathBuf::from(db_path),
+            #[cfg(feature = "web")]
+            port,
+        };
+
+        Self::init(&path, &config).wrap_err(
+            "Failed to initialise configuration file after interactively getting config",
+        )?;
+
+        Ok(config)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Database {
     pub logins: HashMap<Uuid, Login>,
+    #[serde(skip)]
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize, Tabled)]
@@ -73,42 +227,17 @@ impl<'a> AsRef<str> for LoginAndId<'a> {
     }
 }
 
+// FIXME: Don't `clone()` the path when it's passed to `open()` or `init()`
 impl Database {
-    pub fn open(path: &str) -> Result<Self> {
-        let mut f = File::open(path).map_err(|err| err.kind());
-
-        if let Err(err) = &f {
-            if *err == io::ErrorKind::NotFound {
-                return Self::init(path)
-                    .wrap_err("Failed to initialise new database in `Database::open`");
-            }
-            bail!("Failed to open existing database: {err}")
-        }
-
-        let mut reader = BufReader::new(f.as_ref().unwrap());
-        let mut contents = String::new();
-        reader
-            .read_to_string(&mut contents)
-            .wrap_err("Failed to read existing database")?;
-
-        // less ugly than before.
-        let db = if contents.is_empty() {
-            Self {
-                logins: HashMap::new(),
-            }
-        } else {
-            ron::from_str::<Database>(&contents).wrap_err("Failed to parse existing database")?
-        };
-
-        Ok(db)
-    }
-
-    pub fn init(path: &str) -> Result<Self> {
+    pub fn init<P: AsRef<Path>>(path: P) -> Result<Self>
+    where
+        PathBuf: From<P>,
+    {
         let f = OpenOptions::new()
             .read(true)
             .write(true)
             .create_new(true)
-            .open(path)
+            .open(&path)
             .map_err(|err| err.kind());
 
         if let Err(io::ErrorKind::AlreadyExists) = f {
@@ -121,7 +250,38 @@ impl Database {
 
         Ok(Self {
             logins: HashMap::new(),
+            path: PathBuf::from(path),
         })
+    }
+
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self>
+    where
+        PathBuf: From<P>,
+    {
+        let mut f = File::open(&path).map_err(|err| err.kind());
+
+        if let Err(err) = &f {
+            // TODO, look at whether this is actually a good idea or not.
+            if *err == io::ErrorKind::NotFound {
+                return Self::init(path)
+                    .wrap_err("Failed to initialise new database in `Database::open`");
+            }
+            bail!("Failed to open existing database: {err}")
+        }
+
+        let reader = BufReader::new(f.as_ref().unwrap());
+        let is_empty = fs::metadata(&path)
+            .wrap_err("Failed to get metadata of existing database")?
+            .len()
+            == 0;
+        let mut db = if is_empty {
+            Self::default()
+        } else {
+            rmp_serde::decode::from_read(reader).wrap_err("Failed to parse existing database")?
+        };
+        db.path = PathBuf::from(path);
+
+        Ok(db)
     }
 
     pub fn add(&mut self, login: Login) {
@@ -275,23 +435,19 @@ impl Database {
         Ok(None)
     }
 
-    pub fn sync(&self, path: &str) -> Result<()> {
+    pub fn sync(&self) -> Result<()> {
         let f = OpenOptions::new()
             .write(true)
             .truncate(true)
             .read(false)
-            .open(path)
+            .open(&self.path)
             .wrap_err("Failed to open the database file for sync")?;
-        let writer = BufWriter::new(f);
+        let mut writer = BufWriter::new(f);
 
-        ron::ser::to_writer_pretty(
-            writer,
-            &self,
-            PrettyConfig::default()
-                .indentor("\t".to_string())
-                .struct_names(true),
-        )
-        .wrap_err("Failed to sync the database to disk")?;
+        let doc = rmp_serde::encode::to_vec(&self).wrap_err("Failed to serialise the database")?;
+        writer
+            .write_all(&doc)
+            .wrap_err("Failed to write the database to disk")?;
 
         Ok(())
     }

@@ -1,18 +1,28 @@
+use std::env::temp_dir;
 use std::fs;
 use std::hint::unreachable_unchecked;
-use std::io::Cursor;
+use std::io::{Cursor, ErrorKind};
+use std::ops::{Deref, DerefMut};
+use std::path::Path;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
-use color_eyre::eyre::{Result, WrapErr};
+use color_eyre::eyre::{bail, eyre, Result, WrapErr};
+use signal_hook;
+use signal_hook::consts::SIGINT;
 use tiny_http::{Header, Request, Response, StatusCode};
 use url::Url;
 use uuid::Uuid;
 
 use crate::models::{Database, Login};
 
-pub fn serve(db: &mut Database) -> Result<()> {
-    let ip = "127.0.0.1:56423";
-    let server = tiny_http::Server::http(ip)
+pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
+    let should_shutdown = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(SIGINT, Arc::clone(&should_shutdown))
+        .wrap_err("Failed to register the shutdown bool")?;
+    let ip = format!("127.0.0.1:{port}");
+    let server = tiny_http::Server::http(&ip)
         .map_err(|e| color_eyre::eyre::eyre!(e))
         .wrap_err_with(|| format!("Failed to start server at {ip}"))?;
 
@@ -56,6 +66,19 @@ pub fn serve(db: &mut Database) -> Result<()> {
                 db,
             ),
             _ => serve_404(request),
+        }
+
+        if should_shutdown.load(Ordering::Relaxed) {
+            if let Err(err) = fs::remove_file(lck_path) {
+                match err.kind() {
+                    ErrorKind::NotFound => {
+                        // TODO: Improve this message.
+                        eprintln!("Tried to remove the lockfile, but it was already gone");
+                        std::process::exit(1);
+                    }
+                    _ => bail!("Failed to remove the lockfile: {}", err),
+                }
+            };
         }
     }
     Ok(())
@@ -128,7 +151,7 @@ fn serve_static(request: Request) {
             "text/css; charset=utf8",
         ),
         _ => unsafe { unreachable_unchecked() },
-    }
+    };
 }
 
 fn serve_bytes(request: Request, content: &[u8], content_type: &str) {
