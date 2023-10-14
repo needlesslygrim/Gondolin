@@ -36,8 +36,8 @@ signal-hook = { version = "0.3.17" }
 
 [features]
 web = ["tiny_http", "url", "serde_json"]
-paralell_queries = ["rayon"]
-default = ["web", "paralell_queries"]
+parallel_queries = ["rayon"]
+default = ["web", "parallel_queries"]
 
 [profile.release]
 opt-level = "z"

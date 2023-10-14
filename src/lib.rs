@@ -1,11 +1,7 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 
-use std::fs::{write, OpenOptions};
-use std::hint::unreachable_unchecked;
-use std::io::ErrorKind;
-use std::process::ExitCode;
-use std::{env, fs};
+use std::{env, fs, fs::OpenOptions, hint::unreachable_unchecked, io::ErrorKind};
 
 use color_eyre::eyre::bail;
 use color_eyre::{eyre::Context, Result};
@@ -56,7 +52,7 @@ pub fn run(args: Cli) -> Result<()> {
     if matches!(args.subcommand, C::Init) {
         Config::init_interactive(&conf_path, &db_path)
             .wrap_err("Failed to initialise configuration file")?;
-        Database::init(db_path).wrap_err("Failed to initialise database")?;
+        Database::init(&db_path).wrap_err("Failed to initialise database")?;
 
         println!("Successfully initialised a database and configuration file");
         return Ok(());
@@ -65,7 +61,7 @@ pub fn run(args: Cli) -> Result<()> {
     let config =
         Config::open_interactive(&conf_path).wrap_err("Failed to open config interactively")?;
 
-    let mut db = Database::open(config.path).wrap_err("Failed to open the existing database")?;
+    let mut db = Database::open(&config.path).wrap_err("Failed to open the existing database")?;
 
     let mut lck_path = env::temp_dir();
     lck_path.push(LCK_FILE_NAME);
@@ -89,7 +85,7 @@ pub fn run(args: Cli) -> Result<()> {
         // Hopefully this isn't a bad idea :)
         C::Init => unsafe { unreachable_unchecked() },
         C::New => db
-            .add_new_interactive()
+            .add_login_interactive()
             .wrap_err("Failed to add a new login to the database")?,
         C::Query(name) => db.query_interactive(name.name.as_deref()),
         C::Remove => {

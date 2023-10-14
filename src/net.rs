@@ -1,14 +1,14 @@
-use std::env::temp_dir;
-use std::fs;
-use std::hint::unreachable_unchecked;
-use std::io::{Cursor, ErrorKind};
-use std::ops::{Deref, DerefMut};
-use std::path::Path;
-use std::str::FromStr;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::{
+    fs,
+    hint::unreachable_unchecked,
+    io::ErrorKind,
+    path::Path,
+    str::FromStr,
+    sync::atomic::{AtomicBool, Ordering},
+    sync::Arc,
+};
 
-use color_eyre::eyre::{bail, eyre, Result, WrapErr};
+use color_eyre::eyre::{bail, Result, WrapErr};
 use signal_hook;
 use signal_hook::consts::SIGINT;
 use tiny_http::{Header, Request, Response, StatusCode};
@@ -30,7 +30,7 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
     for request in server.incoming_requests() {
         use tiny_http::Method as M;
         let url = match Url::from_str("https://notarealdomain.gb")
-            .expect("pls don't put rubbish in here")
+            .expect("Please don't put any rubbish in this url")
             .join(request.url())
         {
             Ok(url) => url,
@@ -72,8 +72,7 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
             if let Err(err) = fs::remove_file(lck_path) {
                 match err.kind() {
                     ErrorKind::NotFound => {
-                        // TODO: Improve this message.
-                        eprintln!("Tried to remove the lockfile, but it was already gone");
+                        eprintln!("Tried to remove the lockfile, but it isn't present");
                         std::process::exit(1);
                     }
                     _ => bail!("Failed to remove the lockfile: {}", err),
@@ -205,9 +204,10 @@ fn add_new(mut request: Request, db: &mut Database) {
         .find(|header| header.field.as_str() == "Content-Type");
     let content_type_header = if maybe_content_type.is_none() {
         eprintln!("[|] WARN: A request was made to `/api/v1/new` without a `Content-Type` header");
-        if let Err(e) = request.respond(make_415()) {
+        let response =
+            Response::from_string(StatusCode(415).default_reason_phrase()).with_status_code(415);
+        if let Err(e) = request.respond(response) {
             eprintln!("[|] WARN: Failed to respond to a request: {e:#?}");
-            return;
         }
         return;
     } else {
@@ -217,18 +217,20 @@ fn add_new(mut request: Request, db: &mut Database) {
 
     if content_type_header.value != "application/json" {
         eprintln!("[|] WARN: A request was made to `/api/v1/new` without a valid `Content-Type` of `application/json`");
-        if let Err(e) = request.respond(make_415()) {
+        let response =
+            Response::from_string(StatusCode(415).default_reason_phrase()).with_status_code(415);
+        if let Err(e) = request.respond(response) {
             eprintln!("[|] WARN: Failed to respond to a request: {e:#?}");
-            return;
         }
         return;
     }
 
     if let Err(e) = request.as_reader().read_to_end(&mut buf) {
         eprintln!("[|] WARN: Could not read the body of the request: {e:#?}");
-        if let Err(e) = request.respond(make_415()) {
+        let response =
+            Response::from_string(StatusCode(415).default_reason_phrase()).with_status_code(415);
+        if let Err(e) = request.respond(response) {
             eprintln!("[|] WARN: Failed to respond to a request: {e:#?}");
-            return;
         }
         return;
     }
@@ -242,11 +244,12 @@ fn add_new(mut request: Request, db: &mut Database) {
     };
 
     let logins: Result<Vec<Login>, _> = serde_json::de::from_str(&content);
-    let mut logins = if let Err(e) = logins {
+    let logins = if let Err(e) = logins {
         eprintln!("[-] WARN: Failed to parse login from request: {e}");
-        if let Err(e) = request.respond(make_415()) {
+        let response =
+            Response::from_string(StatusCode(415).default_reason_phrase()).with_status_code(415);
+        if let Err(e) = request.respond(response) {
             eprintln!("[|] WARN: Failed to respond to a request: {e:#?}");
-            return;
         }
         return;
     } else {
@@ -254,7 +257,7 @@ fn add_new(mut request: Request, db: &mut Database) {
         unsafe { logins.unwrap_unchecked() }
     };
 
-    db.append(logins);
+    db.append_logins(logins);
     if let Err(e) = request.respond(
         Response::from_string(StatusCode(201).default_reason_phrase()).with_status_code(201),
     ) {
@@ -262,24 +265,18 @@ fn add_new(mut request: Request, db: &mut Database) {
     };
 }
 
-#[inline(always)]
-fn make_415() -> Response<Cursor<Vec<u8>>> {
-    Response::from_string(StatusCode(415).default_reason_phrase()).with_status_code(415)
-}
-
-// Now idempotent. Returns 204 on successful deletion, and 404 otherwise. Due to idempotency, a request can be sent mulitple times by the client
+// Now idempotent. Returns 204 on successful deletion, and 404 otherwise. Due to idempotency, a request can be sent multiple times by the client
 // legally. Only the first successful deletion will return 204, other would-be-successful requests get a 404. This is OK according to
 // https://stackoverflow.com/questions/24713945/does-idempotency-include-response-codes.8
-fn remove_login(mut request: Request, id: Option<&str>, db: &mut Database) {
+fn remove_login(request: Request, id: Option<&str>, db: &mut Database) {
     let Some(id) = id else {
         eprintln!("[|] WARN: A DELETE request contained no ID");
-        // I assume that this should be a 404, looking at https://www.rfc-editor.org/rfc/rfc9110.html#name-client-error-4xx that seems to be most accurate.
+        // I assume that this should be a 404, looking at https://www.rfc-editor.org/rfc/rfc9110.html#name-client-error-4xx a 404 seems to be most accurate.
         let response =
             Response::from_string(StatusCode(404).default_reason_phrase()).with_status_code(404);
 
         if let Err(e) = request.respond(response) {
             eprintln!("[|] WARN: Failed to respond to a request: {e:#?}");
-            return;
         }
         return;
     };
@@ -292,7 +289,6 @@ fn remove_login(mut request: Request, id: Option<&str>, db: &mut Database) {
                 .with_status_code(404);
             if let Err(e) = request.respond(response) {
                 eprintln!("[|] WARN: Failed to respond to a request: {e:#?}");
-                return;
             }
             return;
         }
@@ -303,7 +299,6 @@ fn remove_login(mut request: Request, id: Option<&str>, db: &mut Database) {
             Response::from_string(StatusCode(404).default_reason_phrase()).with_status_code(404);
         if let Err(e) = request.respond(response) {
             eprintln!("[|] WARN: Failed to respond to a request: {e:#?}");
-            return;
         }
         return;
     }
