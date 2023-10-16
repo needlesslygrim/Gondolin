@@ -1,3 +1,4 @@
+use std::fmt::format;
 use std::{
     fs,
     hint::unreachable_unchecked,
@@ -48,6 +49,14 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
             (M::Get, "/" | "/index.js" | "/index.js.map" | "/src/index.ts" | "/index.css") => {
                 serve_static(request)
             }
+            (M::Get, "/query") => serve_query_page(
+                request,
+                url.query_pairs()
+                    .find(|query| &query.0 == "query")
+                    .map(|query| query.1)
+                    .as_deref(),
+                &db,
+            ),
             (M::Get, "/api/v1/query") => serve_query(
                 request,
                 url.query_pairs()
@@ -69,6 +78,7 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
         }
 
         if should_shutdown.load(Ordering::Relaxed) {
+            db.sync().wrap_err("Failed to sync database to disk")?;
             if let Err(err) = fs::remove_file(lck_path) {
                 match err.kind() {
                     ErrorKind::NotFound => {
@@ -92,27 +102,27 @@ fn serve_static(request: Request) {
     match request.url() {
         "/" => serve_bytes(
             request,
-            fs::read("src/index.html").unwrap().as_slice(),
+            &fs::read("src/web/index.html").expect("Failed to open index.html")[..],
             "text/html; charset=utf8",
         ),
         "/index.js" => serve_bytes(
             request,
-            fs::read("dist/index.js").unwrap().as_slice(),
+            &fs::read("dist/index.js").expect("Failed to open index.js")[..],
             "text/javascript; charset=utf8",
         ),
         "/index.js.map" => serve_bytes(
             request,
-            fs::read("dist/index.js.map").unwrap().as_slice(),
+            &fs::read("dist/index.js.map").expect("Failed to open index.js.map")[..],
             "application/json; charset=utf8",
         ),
         "/src/index.ts" => serve_bytes(
             request,
-            fs::read("src/index.ts").unwrap().as_slice(),
+            &fs::read("src/web/index.ts").expect("Failed to open index.ts")[..],
             "text/plain; charset=utf8",
         ),
         "/index.css" => serve_bytes(
             request,
-            fs::read("dist/index.css").unwrap().as_slice(),
+            &fs::read("dist/index.css").expect("Failed to open index.css")[..],
             "text/css; charset=utf8",
         ),
         _ => unsafe { unreachable_unchecked() },
@@ -126,7 +136,7 @@ fn serve_static(request: Request) {
     match request.url() {
         "/" => serve_bytes(
             request,
-            &include_bytes!("index.html")[..],
+            &include_bytes!("web/index.html")[..],
             "text/html; charset=utf8",
         ),
         "/index.js" => serve_bytes(
@@ -141,7 +151,7 @@ fn serve_static(request: Request) {
         ),
         "/src/index.ts" => serve_bytes(
             request,
-            &include_bytes!("index.ts")[..],
+            &include_bytes!("web/index.ts")[..],
             "text/javascript; charset=utf8",
         ),
         "/index.css" => serve_bytes(
@@ -187,6 +197,33 @@ fn serve_query(request: Request, query: Option<&str>, db: &Database) {
     let header = Header::from_bytes("Content-Type", "application/json")
         .expect("Don't put rubbish in here please");
     let response = Response::from_string(body)
+        .with_header(header)
+        .with_status_code(200);
+
+    if let Err(e) = request.respond(response) {
+        eprintln!("[|] WARN: Failed to respond to a request: {e:#?}");
+    };
+}
+
+// This function currently doesn't support the "hot-reloading" that the other static files do. This
+// is due to not using a proper templating library, and instead just formatting the text.
+fn serve_query_page(request: Request, query: Option<&str>, db: &Database) {
+    let logins = db.query(query);
+
+    let mut grids = String::new();
+    for login in logins {
+        let card = format!(
+            include_str!("web/card.html"),
+            name = login.1.name,
+            username = login.1.username,
+            password = login.1.password
+        );
+        grids.push_str(&card);
+    }
+
+    let header =
+        Header::from_bytes("Content-Type", "text/html").expect("Don't put rubbish in here please");
+    let response = Response::from_string(format!(include_str!("web/query.html"), grid = grids))
         .with_header(header)
         .with_status_code(200);
 

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Title</title>
+		<link rel="stylesheet" href="/index.css" />
+	</head>
+	<body
+		class="bg-zinc-100 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+	>
+		<div class="flex min-h-screen flex-col items-center justify-start p-4">
+			<form
+				action="/query"
+				class="flex w-full flex-col items-center"
+				method="GET"
+			>
+				<div
+					class="box-sizing mx-24 my-12 flex h-14 w-3/4 items-center justify-center rounded-xl bg-zinc-100 p-5 shadow-lg ring-1 ring-zinc-900/10 transition-all ease-in-out focus-within:outline-zinc-700 focus-within:ring-2 focus-within:ring-zinc-800 focus-within:ring-offset-2 focus-within:ring-offset-zinc-100 hover:ring-zinc-900/25 hover:focus-within:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:focus-within:ring-zinc-100/60 dark:focus-within:ring-offset-zinc-900 dark:hover:ring-zinc-100/30 dark:hover:focus-within:ring-zinc-100/60"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+						class="h-5 w-5 flex-none text-zinc-950 dark:text-zinc-100"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					<!-- Bad hack to make it high enough -->
+					<input
+						aria-label="Search"
+						class="m-2 mr-0 h-14 w-full flex-1 resize-none content-center bg-zinc-100 text-left align-middle outline-none hover:outline-none focus:outline-none dark:bg-zinc-800 dark:text-zinc-100"
+						type="search"
+						id="query"
+						name="query"
+					/>
+				</div>
+				<button
+					class="focus:bg-zinc h-12 rounded-lg bg-zinc-100 px-6 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
+				>
+					Search
+				</button>
+			</form>
+			<div
+				class="grid gap-x-8 gap-y-3 self-center py-32 md:grid-cols-2 lg:grid-cols-4"
+			>
+				{grid}
+			</div>
+		</div>
+	</body>
+</html>

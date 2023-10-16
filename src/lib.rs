@@ -65,8 +65,7 @@ pub fn run(args: Cli) -> Result<()> {
 
     let mut lck_path = env::temp_dir();
     lck_path.push(LCK_FILE_NAME);
-    // Simply discard the file descriptor, since we don't need it to remove the file later, although
-    // that would be a nice api...
+
     if let Err(err) = OpenOptions::new()
         .create_new(true)
         .write(true)
