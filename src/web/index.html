@@ -30,18 +30,32 @@
 				</svg>
 				<!-- Bad hack to make it high enough -->
 				<input
-					aria-label="Search"
-					class="m-2 h-14 w-full flex-1 resize-none content-center bg-zinc-100 text-left align-middle outline-none dark:bg-zinc-800 dark:text-zinc-100"
+					aria-label="Search for logins"
+					autocomplete="off"
+					autocorrect="off"
+					autocapitalize="none"
+					placeholder="Search for logins"
+					role="searchbox"
+					spellcheck="false"
+					class="m-2 mr-0 h-14 w-full flex-1 resize-none content-center bg-zinc-100 text-left align-middle outline-none hover:outline-none focus:outline-none dark:bg-zinc-800 dark:text-zinc-100"
 					type="search"
 					id="query"
 					name="query"
 				/>
 			</div>
-			<button
-				class="focus:bg-zinc h-12 rounded-lg bg-zinc-100 px-6 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
-			>
-				Search
-			</button>
+			<div class="flex gap-7">
+				<button
+					class="focus:bg-zinc h-12 rounded-lg bg-zinc-100 px-6 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
+				>
+					Search
+				</button>
+				<a
+					href="/new"
+					class="focus:bg-zinc flex h-12 items-center justify-center rounded-lg bg-zinc-100 px-6 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
+				>
+					<p>Add a new login</p>
+				</a>
+			</div>
 		</form>
 	</body>
 </html>

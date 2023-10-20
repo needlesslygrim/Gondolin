@@ -2,9 +2,10 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<title>Title</title>
+		<title>Gondolin</title>
 		<link rel="stylesheet" href="/index.css" />
 	</head>
+
 	<body class="bg-zinc-100 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
 		<div class="flex min-h-screen flex-col items-center justify-start p-4">
 			<a
@@ -61,7 +62,13 @@
 					</svg>
 					<!-- Bad hack to make it high enough -->
 					<input
-						aria-label="Search"
+						aria-label="Search for logins"
+						autocomplete="off"
+						autocorrect="off"
+						autocapitalize="none"
+						placeholder="Search for logins"
+						role="searchbox"
+						spellcheck="false"
 						class="m-2 mr-0 h-14 w-full flex-1 resize-none content-center bg-zinc-100 text-left align-middle outline-none hover:outline-none focus:outline-none dark:bg-zinc-800 dark:text-zinc-100"
 						type="search"
 						id="query"
@@ -75,7 +82,7 @@
 				</button>
 			</form>
 			<div
-				class="grid gap-x-7 gap-y-7 self-center py-24 md:grid-cols-2 lg:grid-cols-4"
+				class="mx-6 my-24 grid gap-7 self-center transition-all sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 min-[2000px]:grid-cols-5"
 			>
 				{grid}
 			</div>
