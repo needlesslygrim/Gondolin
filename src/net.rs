@@ -30,14 +30,14 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
     eprintln!("[+] INFO: Serving webpage at {ip}");
     for request in server.incoming_requests() {
         use tiny_http::Method as M;
-        let url = match Url::from_str("https://notarealdomain.gb")
+        let url = match Url::from_str(&format!("https://{}", ip))
             .expect("Please don't put any rubbish in this url")
             .join(request.url())
         {
             Ok(url) => url,
             Err(e) => {
                 eprintln!(
-                    "[-] WARN; Failed to parse a url: `{}`, with err: {}",
+                    "[-] ERROR; Failed to parse a url: `{}`, with err: {}",
                     request.url(),
                     e
                 );
@@ -46,9 +46,7 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
         };
         // TODO: Go through all of these functions, and check that they follow the proper behaviour, returning correct status codes, etc.
         match (request.method(), url.path()) {
-            (M::Get, "/" | "/index.js" | "/index.js.map" | "/src/index.ts" | "/index.css") => {
-                serve_static(request)
-            }
+            (M::Get, "/" | "/index.css" | "/query.js" | "/query.js.map") => serve_static(request),
             (M::Get, "/query") => serve_query_page(
                 request,
                 url.query_pairs()
@@ -74,7 +72,10 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
                     .as_deref(),
                 db,
             ),
-            _ => serve_404(request),
+            _ => {
+                eprintln!("[|] WARN: 404 served: {}", url.path());
+                serve_404(request)
+            }
         }
 
         if should_shutdown.load(Ordering::Relaxed) {
@@ -105,25 +106,15 @@ fn serve_static(request: Request) {
             &fs::read("src/web/index.html").expect("Failed to open index.html")[..],
             "text/html; charset=utf8",
         ),
-        "/index.js" => serve_bytes(
-            request,
-            &fs::read("dist/index.js").expect("Failed to open index.js")[..],
-            "text/javascript; charset=utf8",
-        ),
-        "/index.js.map" => serve_bytes(
-            request,
-            &fs::read("dist/index.js.map").expect("Failed to open index.js.map")[..],
-            "application/json; charset=utf8",
-        ),
-        "/src/index.ts" => serve_bytes(
-            request,
-            &fs::read("src/web/index.ts").expect("Failed to open index.ts")[..],
-            "text/plain; charset=utf8",
-        ),
         "/index.css" => serve_bytes(
             request,
             &fs::read("dist/index.css").expect("Failed to open index.css")[..],
             "text/css; charset=utf8",
+        ),
+        "/query.js" => serve_bytes(
+            request,
+            &fs::read("dist/query.js").expect("Failed to open query.js")[..],
+            "application/json; charset=utf8",
         ),
         _ => unsafe { unreachable_unchecked() },
     };
@@ -139,19 +130,9 @@ fn serve_static(request: Request) {
             &include_bytes!("web/index.html")[..],
             "text/html; charset=utf8",
         ),
-        "/index.js" => serve_bytes(
+        "/query.js" => serve_bytes(
             request,
-            &include_bytes!("../dist/index.js")[..],
-            "text/javascript; charset=utf8",
-        ),
-        "/index.js.map" => serve_bytes(
-            request,
-            &include_bytes!("../dist/index.js.map")[..],
-            "application/json; charset=utf8",
-        ),
-        "/src/index.ts" => serve_bytes(
-            request,
-            &include_bytes!("web/index.ts")[..],
+            &include_bytes!("../dist/query.js")[..],
             "text/javascript; charset=utf8",
         ),
         "/index.css" => serve_bytes(
@@ -216,7 +197,8 @@ fn serve_query_page(request: Request, query: Option<&str>, db: &Database) {
             include_str!("web/card.html"),
             name = login.1.name,
             username = login.1.username,
-            password = login.1.password
+            password = login.1.password,
+            id = login.0.simple()
         );
         grids.push_str(&card);
     }

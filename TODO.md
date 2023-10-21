@@ -1,12 +1,12 @@
-- [X] Use URL query parameters instead of passing the query in the body of the GET request
-- [ ] Web interface
-  - [X] Query logins
-  - [ ] Remove logins
-  - [ ] Add logins
-- [ ] API
-  - [ ] Initialise a database via the API
-  - [X] Add logins via the API
-  - [X] Query logins via the API
-  - [ ] Remove logins via the API
-     - [X] Remove a single login
-    - [ ] Remove multiple logins
+-   [x] Use URL query parameters instead of passing the query in the body of the GET request
+-   [ ] Web interface
+    -   [x] Query logins
+    -   [x] Remove logins
+    -   [ ] Add logins
+-   [ ] API
+    -   [ ] Initialise a database via the API
+    -   [x] Add logins via the API
+    -   [x] Query logins via the API
+    -   [ ] Remove logins via the API
+        -   [x] Remove a single login
+        -   [ ] Remove multiple logins
