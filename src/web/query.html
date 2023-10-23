@@ -4,7 +4,7 @@
 		<meta charset="UTF-8" />
 		<title>Gondolin</title>
 		<link rel="stylesheet" href="/index.css" />
-		<script src='/query.js'></script>
+		<script src="/query.js"></script>
 	</head>
 
 	<body class="bg-zinc-100 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
@@ -76,11 +76,19 @@
 						name="query"
 					/>
 				</div>
-				<button
-					class="focus:bg-zinc h-12 rounded-lg bg-zinc-100 px-6 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
-				>
-					Search
-				</button>
+				<div class="flex gap-7">
+					<button
+						class="focus:bg-zinc h-12 rounded-lg bg-zinc-100 px-6 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
+					>
+						Search
+					</button>
+					<a
+						href="/new"
+						class="focus:bg-zinc flex h-12 items-center justify-center rounded-lg bg-zinc-100 px-6 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
+					>
+						<p>Add a new login</p>
+					</a>
+				</div>
 			</form>
 			<div
 				class="mx-6 my-24 grid gap-7 self-center transition-all sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 min-[2000px]:grid-cols-5"

@@ -1,13 +1,13 @@
 <div
 	class="flex flex-col rounded-lg shadow-lg ring-1 ring-zinc-900/10 transition-all ease-in-out dark:bg-zinc-800 dark:ring-zinc-300/25"
-	id='{id}'
+	id="{id}"
 >
-	<p class="p-4 py-8 text-center text-5xl">{name}</p>
+	<!--FIXME: Fix the problems that arise when the name is empty-->
+	<p class="mx-4 my-8 text-center text-5xl">{name}</p>
 	<div
 		class="flex flex-col items-center justify-center gap-y-4 py-4 transition-all ease-in-out"
-
 	>
-		<div class="flex w-full px-3.5 transition-all ease-in-out">
+		<div class="flex h-12 w-full px-3.5 transition-all ease-in-out">
 			<div
 				class="flex grow-0 items-center justify-center rounded-l-md border-2 border-r-0 border-zinc-900/20 bg-zinc-200 transition-all ease-in-out dark:border-zinc-700/75 dark:bg-zinc-900/50"
 			>
@@ -19,7 +19,9 @@
 				<p class="p-2.5">{username}</p>
 			</div>
 		</div>
-		<div class="max-w-112 flex w-full px-3.5 transition-all ease-in-out">
+		<div
+			class="max-w-112 flex h-12 w-full px-3.5 transition-all ease-in-out"
+		>
 			<div
 				class="flex grow-0 items-center justify-center rounded-l-md border-2 border-r-0 border-zinc-900/20 bg-zinc-200 transition-all ease-in-out dark:border-zinc-700/75 dark:bg-zinc-900/50"
 			>

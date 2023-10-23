@@ -46,7 +46,11 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
         };
         // TODO: Go through all of these functions, and check that they follow the proper behaviour, returning correct status codes, etc.
         match (request.method(), url.path()) {
-            (M::Get, "/" | "/index.css" | "/query.js" | "/query.js.map") => serve_static(request),
+            (
+                M::Get,
+                "/" | "/new" | "/index.css" | "/query.js" | "/query.js.map" | "/form.js"
+                | "/form.js.map",
+            ) => serve_static(request),
             (M::Get, "/query") => serve_query_page(
                 request,
                 url.query_pairs()
@@ -63,6 +67,18 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
                     .as_deref(),
                 db,
             ),
+            (M::Get, "/api/v1/sync") => {
+                db.sync()
+                    .wrap_err("Failed to sync database after it was requested via API")?;
+                let Err(err) = request.respond(
+                    Response::from_string(StatusCode(204).default_reason_phrase())
+                        .with_status_code(204),
+                ) else {
+                    continue;
+                };
+
+                eprintln!("[|] WARN: Failed to respond to a request: {err:#?}");
+            }
             (M::Post, "/api/v1/new") => add_new(request, db),
             (M::Delete, "/api/v1/remove") => remove_login(
                 request,
@@ -106,6 +122,11 @@ fn serve_static(request: Request) {
             &fs::read("src/web/index.html").expect("Failed to open index.html")[..],
             "text/html; charset=utf8",
         ),
+        "/new" => serve_bytes(
+            request,
+            &fs::read("src/web/form.html").expect("Failed to open form.html")[..],
+            "text/html; charset=utf8",
+        ),
         "/index.css" => serve_bytes(
             request,
             &fs::read("dist/index.css").expect("Failed to open index.css")[..],
@@ -114,7 +135,22 @@ fn serve_static(request: Request) {
         "/query.js" => serve_bytes(
             request,
             &fs::read("dist/query.js").expect("Failed to open query.js")[..],
-            "application/json; charset=utf8",
+            "application/javascript; charset=utf8",
+        ),
+        "/query.js.map" => serve_bytes(
+            request,
+            &fs::read("dist/query.js.map").expect("Failed to open query.js.map")[..],
+            "application/javascript; charset=utf8",
+        ),
+        "/form.js" => serve_bytes(
+            request,
+            &fs::read("dist/form.js").expect("Failed to open form.js")[..],
+            "application/javascript; charset=utf8",
+        ),
+        "/form.js.map" => serve_bytes(
+            request,
+            &fs::read("dist/form.js.map").expect("Failed to open form.js.map")[..],
+            "application/javascript; charset=utf8",
         ),
         _ => unsafe { unreachable_unchecked() },
     };
@@ -130,15 +166,35 @@ fn serve_static(request: Request) {
             &include_bytes!("web/index.html")[..],
             "text/html; charset=utf8",
         ),
-        "/query.js" => serve_bytes(
+        "/new" => serve_bytes(
             request,
-            &include_bytes!("../dist/query.js")[..],
-            "text/javascript; charset=utf8",
+            &include_bytes!("web/form.html")[..],
+            "text/html; charset=utf8",
         ),
         "/index.css" => serve_bytes(
             request,
             &include_bytes!("../dist/index.css")[..],
             "text/css; charset=utf8",
+        ),
+        "/query.js" => serve_bytes(
+            request,
+            &include_bytes!("../dist/query.js")[..],
+            "application/javascript; charset=utf8",
+        ),
+        "/query.js.map" => serve_bytes(
+            request,
+            &include_bytes!("../dist/query.js.map")[..],
+            "application/javascript; charset=utf8",
+        ),
+        "/form.js" => serve_bytes(
+            request,
+            &include_bytes!("../dist/form.js")[..],
+            "application/javascript; charset=utf8",
+        ),
+        "/form.js.map" => serve_bytes(
+            request,
+            &include_bytes!("../dist/form.js.map")[..],
+            "application/javascript; charset=utf8",
         ),
         _ => unsafe { unreachable_unchecked() },
     };
