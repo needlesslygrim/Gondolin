@@ -178,16 +178,19 @@ impl Database {
 
         let name = Input::<String>::with_theme(&theme)
             .with_prompt("Enter the name for the login")
+            .allow_empty(true)
             .interact_text()
             .wrap_err("Failed to read name from console")?;
 
         let username = Input::<String>::with_theme(&theme)
             .with_prompt("Enter the username for this login")
+            .allow_empty(true)
             .interact_text()
             .wrap_err("Failed to read username from console")?;
 
         let password = Password::with_theme(&theme)
             .with_prompt("Enter the password for this login")
+            .allow_empty_password(true)
             .interact()
             .wrap_err("Failed to read password from console")?;
 
