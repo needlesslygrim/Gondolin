@@ -12,6 +12,7 @@ mod models;
 #[cfg(feature = "web")]
 mod net;
 
+use crate::args::InitArgs;
 use crate::models::Config;
 use args::Cli;
 use models::Database;
@@ -49,8 +50,8 @@ pub fn run(args: Cli) -> Result<()> {
     let db_path = data_dir.join(DATABASE_FILE_NAME);
     // Alias it to `C` (Command)
     use args::Subcommands as C;
-    if matches!(args.subcommand, C::Init) {
-        Config::init_interactive(&conf_path, &db_path)
+    if let C::Init(InitArgs { port }) = args.subcommand {
+        Config::init_interactive(&conf_path, &db_path, port)
             .wrap_err("Failed to initialise configuration file")?;
         Database::init(&db_path).wrap_err("Failed to initialise database")?;
 
@@ -82,7 +83,7 @@ pub fn run(args: Cli) -> Result<()> {
 
     match args.subcommand {
         // Hopefully this isn't a bad idea :)
-        C::Init => unsafe { unreachable_unchecked() },
+        C::Init(_) => unsafe { unreachable_unchecked() },
         C::New => db
             .add_login_interactive()
             .wrap_err("Failed to add a new login to the database")?,

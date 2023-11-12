@@ -12,12 +12,18 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Subcommands {
-    Init,
+    Init(InitArgs),
     New,
     Query(QueryArgs),
     Remove,
     #[cfg(feature = "web")]
     Serve,
+}
+
+#[derive(Parser, Debug)]
+pub struct InitArgs {
+    #[arg(short, long)]
+    pub port: Option<u16>,
 }
 
 #[derive(Parser, Debug)]

@@ -64,7 +64,20 @@ impl Config {
         Ok(())
     }
 
-    pub(crate) fn init_interactive(path: &Path, db_path: &Path) -> Result<Self> {
+    pub(crate) fn init_interactive(path: &Path, db_path: &Path, port: Option<u16>) -> Result<Self> {
+        if let Some(port) = port {
+            let config = Config {
+                path: PathBuf::from(db_path),
+                #[cfg(feature = "web")]
+                port,
+            };
+            Self::init(&path, &config).wrap_err(
+                "Failed to initialise configuration file after interactively getting config",
+            )?;
+
+            return Ok(config);
+        }
+
         let theme = ColorfulTheme::default();
 
         #[cfg(feature = "web")]
