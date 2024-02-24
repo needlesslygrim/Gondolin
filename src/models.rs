@@ -71,7 +71,7 @@ impl Config {
                 #[cfg(feature = "web")]
                 port,
             };
-            Self::init(&path, &config).wrap_err(
+            Self::init(path, &config).wrap_err(
                 "Failed to initialise configuration file after interactively getting config",
             )?;
 
@@ -101,7 +101,7 @@ impl Config {
             port,
         };
 
-        Self::init(&path, &config).wrap_err(
+        Self::init(path, &config).wrap_err(
             "Failed to initialise configuration file after interactively getting config",
         )?;
 
@@ -109,12 +109,15 @@ impl Config {
     }
 
     fn open(path: &Path) -> Result<Self> {
-        let f = File::open(&path).wrap_err("Failed to open file handle to configuration file")?;
+        let f = File::open(path).wrap_err("Failed to open file handle to configuration file")?;
         let mut reader = BufReader::new(f);
         let mut buf = String::with_capacity(
-            fs::metadata(&path)
-                .wrap_err("Failed to get metadata of configuration file")?
-                .len() as usize,
+            usize::try_from(
+                fs::metadata(path)
+                    .wrap_err("Failed to get metadata of configuration file")?
+                    .len(),
+            )
+            .unwrap_or_default(),
         );
         reader
             .read_to_string(&mut buf)
@@ -145,7 +148,7 @@ impl Database {
             .read(true)
             .write(true)
             .create_new(true)
-            .open(&path)
+            .open(path)
         {
             match err.kind() {
                 ErrorKind::AlreadyExists => {
@@ -163,16 +166,19 @@ impl Database {
 
     pub fn open(path: &Path) -> Result<Self> {
         let reader =
-            BufReader::new(File::open(&path).wrap_err("Failed to open file handle to database")?);
-        let is_empty = fs::metadata(&path)
-            .wrap_err("Failed to get file metadata of database")?
-            .len()
-            == 0;
+            BufReader::new(File::open(path).wrap_err("Failed to open file handle to database")?);
+        let is_empty = match fs::metadata(path) {
+            Ok(meta) => meta.len(),
+            Err(err) => match err.kind() {
+                ErrorKind::NotFound => 0,
+                _ => Err(err).wrap_err("Failed to get metadata of configuration file")?,
+            },
+        } == 0;
+
         let mut db = if is_empty {
             Self::default()
         } else {
-            rmp_serde::decode::from_read(reader)
-                .wrap_err("Failed to parse database file contents")?
+            rmp_serde::decode::from_read(reader).wrap_err("Failed to parse database contents")?
         };
         db.path = PathBuf::from(path);
 

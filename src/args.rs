@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(name = "Safe")]
-#[command(author = "Erick, Anabeth, Toto, Felix")]
+#[command(author = "needlesslygrim")]
 #[command(version = "0.1")]
 #[command(about = "A simple password manager", long_about = None)]
 pub struct Cli {
@@ -12,6 +12,7 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Subcommands {
+    #[command(about = "Initialise a database and configuration")]
     Init(InitArgs),
     New,
     Query(QueryArgs),

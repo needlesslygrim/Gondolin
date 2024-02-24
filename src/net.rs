@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::{
     fs,
     hint::unreachable_unchecked,
@@ -10,7 +9,6 @@ use std::{
 };
 
 use color_eyre::eyre::{bail, Result, WrapErr};
-use signal_hook;
 use signal_hook::consts::SIGINT;
 use tiny_http::{Header, Request, Response, StatusCode};
 use url::Url;
@@ -30,7 +28,7 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
     eprintln!("[+] INFO: Serving webpage at {ip}");
     for request in server.incoming_requests() {
         use tiny_http::Method as M;
-        let url = match Url::from_str(&format!("https://{}", ip))
+        let url = match Url::from_str(&format!("https://{ip}"))
             .expect("Please don't put any rubbish in this url")
             .join(request.url())
         {
@@ -57,7 +55,7 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
                     .find(|query| &query.0 == "query")
                     .map(|query| query.1)
                     .as_deref(),
-                &db,
+                db,
             ),
             (M::Get, "/api/v1/query") => serve_query(
                 request,
@@ -90,7 +88,7 @@ pub fn serve(db: &mut Database, port: u16, lck_path: &Path) -> Result<()> {
             ),
             _ => {
                 eprintln!("[|] WARN: 404 served: {}", url.path());
-                serve_404(request)
+                serve_404(request);
             }
         }
 
@@ -369,7 +367,7 @@ fn remove_login(request: Request, id: Option<&str>, db: &mut Database) {
         }
     };
 
-    if matches!(db.remove(id), None) {
+    if db.remove(id).is_none() {
         let response =
             Response::from_string(StatusCode(404).default_reason_phrase()).with_status_code(404);
         if let Err(e) = request.respond(response) {

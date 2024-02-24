@@ -5,5 +5,5 @@ use clap::Parser;
 // not work with color_eyre, so research is needed :^).
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
-    gondolin::run(gondolin::args::Cli::parse())
+    locket::run(locket::args::Cli::parse())
 }

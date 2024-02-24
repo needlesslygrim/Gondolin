@@ -17,9 +17,9 @@ use crate::models::Config;
 use args::Cli;
 use models::Database;
 
-static DATABASE_FILE_NAME: &'static str = "gondolin.db";
-static CONFIG_FILE_NAME: &'static str = "gondolin.toml";
-static LCK_FILE_NAME: &'static str = "gondolin.lck";
+static DATABASE_FILE_NAME: &str = "gondolin.db";
+static CONFIG_FILE_NAME: &str = "gondolin.toml";
+static LCK_FILE_NAME: &str = "gondolin.lck";
 
 // TODO: Extract the logic of opening and closing the config, database, and lockfile into either a set of functions, or an empty struct called
 // `Program` or something, which is responsible for all of this stuff. That would also improve the shutdown logic in `net::serve()`, and would
@@ -42,12 +42,13 @@ pub fn run(args: Cli) -> Result<()> {
             .try_exists()
             .wrap_err("Failed to check if data dir exists")?
     {
-        fs::create_dir_all(&conf_dir).wrap_err("Failed to create configuration dir")?;
-        fs::create_dir_all(&data_dir).wrap_err("Failed to create data dir")?;
+        fs::create_dir_all(conf_dir).wrap_err("Failed to create configuration dir")?;
+        fs::create_dir_all(data_dir).wrap_err("Failed to create data dir")?;
     }
 
     let conf_path = conf_dir.join(CONFIG_FILE_NAME);
     let db_path = data_dir.join(DATABASE_FILE_NAME);
+
     // Alias it to `C` (Command)
     use args::Subcommands as C;
     if let C::Init(InitArgs { port }) = args.subcommand {
@@ -94,7 +95,7 @@ pub fn run(args: Cli) -> Result<()> {
         }
         #[cfg(feature = "web")]
         C::Serve => {
-            net::serve(&mut db, config.port, &lck_path).wrap_err("Failed to serve webpage")?
+            net::serve(&mut db, config.port, &lck_path).wrap_err("Failed to serve webpage")?;
         }
     };
 
