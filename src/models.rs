@@ -20,7 +20,7 @@ use tabled::{
 };
 use uuid::Uuid;
 
-use crate::errors::GondolinError;
+use crate::errors::LocketError;
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
@@ -50,7 +50,7 @@ impl Config {
             .wrap_err("Failed to check whether the configuration file already exists")?;
 
         if exists {
-            bail!(GondolinError::ConfigAlreadyExistsError);
+            bail!(LocketError::ConfigAlreadyExistsError);
         }
 
         let mut writer =
@@ -131,7 +131,7 @@ impl Config {
             .try_exists()
             .wrap_err("Failed to check whether the database exists")?
         {
-            eprintln!("You have not initialised Gondolin yet, please run `gondolin init` to initialise, then run this command again.");
+            eprintln!("You have not initialised Locket yet, please run `locket init` to initialise, then run this command again.");
             std::process::exit(0);
         }
 
@@ -152,7 +152,7 @@ impl Database {
         {
             match err.kind() {
                 ErrorKind::AlreadyExists => {
-                    bail!(crate::errors::GondolinError::DatabaseAlreadyExistsError)
+                    bail!(crate::errors::LocketError::DatabaseAlreadyExistsError)
                 }
                 _ => bail!("Failed to create a new database file: {err}"),
             };

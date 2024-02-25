@@ -3,11 +3,14 @@ use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(name = "Safe")]
 #[command(author = "needlesslygrim")]
-#[command(version = "0.1")]
+#[command(version = "1.0.0")]
 #[command(about = "A simple password manager", long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
     pub subcommand: Subcommands,
+
+    #[command(flatten)]
+    pub verbosity: clap_verbosity_flag::Verbosity,
 }
 
 #[derive(Subcommand, Debug)]

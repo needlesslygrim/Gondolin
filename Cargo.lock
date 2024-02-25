@@ -197,6 +197,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap-verbosity-flag"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb9b20c0dd58e4c2e991c8d203bbeb76c11304d1011659686b5b644bc29aa478"
+dependencies = [
+ "clap",
+ "log",
+]
+
+[[package]]
 name = "clap_builder"
 version = "4.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -495,34 +505,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fb8d784f27acf97159b40fc4db5ecd8aa23b9ad5ef69cdd136d3bc80665f0c0"
 
 [[package]]
-name = "gondolin"
-version = "1.0.0"
-dependencies = [
- "clap",
- "color-eyre",
- "dialoguer",
- "directories",
- "fastrand",
- "itertools",
- "log",
- "nucleo-matcher",
- "pretty_env_logger",
- "rayon",
- "rmp-serde",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_with",
- "signal-hook",
- "tabled",
- "thiserror",
- "tiny_http",
- "toml",
- "url",
- "uuid",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -683,6 +665,35 @@ name = "linux-raw-sys"
 version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da2479e8c062e40bf0066ffa0bc823de0a9368974af99c9f6df941d2c231e03f"
+
+[[package]]
+name = "locket"
+version = "1.0.0"
+dependencies = [
+ "clap",
+ "clap-verbosity-flag",
+ "color-eyre",
+ "dialoguer",
+ "directories",
+ "fastrand",
+ "itertools",
+ "log",
+ "nucleo-matcher",
+ "pretty_env_logger",
+ "rayon",
+ "rmp-serde",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_with",
+ "signal-hook",
+ "tabled",
+ "thiserror",
+ "tiny_http",
+ "toml",
+ "url",
+ "uuid",
+]
 
 [[package]]
 name = "log"

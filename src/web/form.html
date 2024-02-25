@@ -1,87 +1,60 @@
 <!doctype html>
 <html lang="en-GB">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<title>Gondolin</title>
-		<link rel="stylesheet" href="/index.css" />
-		<script src="/form.js"></script>
-	</head>
-	<body
-		class="bg-zinc-100 text-zinc-800 transition-colors ease-in-out dark:bg-zinc-900 dark:text-zinc-100"
-	>
-		<div class="flex min-h-screen flex-col items-center justify-center p-4">
-			<a
-				class="focus:bg-zinc group flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
-				href="/"
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke-width="1.5"
-					stroke="currentColor"
-					class="absolute h-6 w-6 group-hover:invisible"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
-					></path>
-				</svg>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 24 24"
-					fill="currentColor"
-					class="invisible absolute h-6 w-6 group-hover:visible"
-				>
-					<path
-						d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z"
-					></path>
-					<path
-						d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z"
-					></path>
-				</svg>
-			</a>
-			<div class="flex w-1/2 flex-col items-center justify-center gap-4">
-				<div class="w-full">
-					<label for="name" class="block leading-6">Name</label>
-					<input
-						name="name"
-						class="form-input mt-0.5 block w-full rounded-md border-0 bg-zinc-100 shadow-md ring-1 ring-inset ring-zinc-900/10 placeholder:text-zinc-400 hover:ring-zinc-900/20 focus:ring-2 focus:ring-inset focus:ring-zinc-900/40 focus:hover:ring-zinc-900/40 dark:bg-zinc-900 dark:ring-zinc-100/20 hover:dark:ring-zinc-100/30 focus:dark:ring-zinc-100/40 focus:hover:dark:ring-zinc-100/40"
-						placeholder="Gondolin"
-						id="name"
-					/>
-				</div>
-				<div class="w-full">
-					<label for="username" class="block leading-6"
-						>Username</label
-					>
-					<input
-						name="password"
-						class="form-input mt-0.5 block w-full rounded-md border-0 bg-zinc-100 shadow-md ring-1 ring-inset ring-zinc-900/10 placeholder:text-zinc-500 hover:ring-zinc-900/20 focus:ring-2 focus:ring-inset focus:ring-zinc-900/40 focus:hover:ring-zinc-900/40 dark:bg-zinc-900 dark:ring-zinc-100/20 hover:dark:ring-zinc-100/30 focus:dark:ring-zinc-100/40 focus:hover:dark:ring-zinc-100/40"
-						placeholder="example@gondolin.uk"
-						id="username"
-					/>
-				</div>
-				<div class="w-full">
-					<label for="password" class="block leading-6"
-						>Password</label
-					>
-					<input
-						name="password"
-						class="form-input mt-0.5 block w-full rounded-md border-0 bg-zinc-100 shadow-md ring-1 ring-inset ring-zinc-900/10 placeholder:text-zinc-500 hover:ring-zinc-900/20 focus:ring-2 focus:ring-inset focus:ring-zinc-900/40 focus:hover:ring-zinc-900/40 dark:bg-zinc-900 dark:ring-zinc-100/20 hover:dark:ring-zinc-100/30 focus:dark:ring-zinc-100/40 focus:hover:dark:ring-zinc-100/40"
-						placeholder="eJD6FMxr^y*@Vw@CzQGgc3nVW4rQsJ@feWjQMTpY7N@@#P^Kc$X3MN7"
-						id="password"
-					/>
-				</div>
-				<button
-					class="focus:bg-zinc h-10 rounded-lg bg-zinc-100 px-3 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
-					onclick="submit()"
-				>
-					Submit
-				</button>
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width" />
+	<title>Locket</title>
+	<link rel="stylesheet" href="/index.css" />
+	<script src="/form.js"></script>
+</head>
+
+<body class="bg-zinc-100 text-zinc-800 transition-colors ease-in-out dark:bg-zinc-900 dark:text-zinc-100">
+	<div class="flex min-h-screen flex-col items-center justify-center p-4">
+		<a class="focus:bg-zinc group flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
+			href="/">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+				class="absolute h-6 w-6 group-hover:invisible">
+				<path stroke-linecap="round" stroke-linejoin="round"
+					d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25">
+				</path>
+			</svg>
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+				class="invisible absolute h-6 w-6 group-hover:visible">
+				<path
+					d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z">
+				</path>
+				<path
+					d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z">
+				</path>
+			</svg>
+		</a>
+		<div class="flex w-1/2 flex-col items-center justify-center gap-4">
+			<div class="w-full">
+				<label for="name" class="block leading-6">Name</label>
+				<input name="name"
+					class="form-input mt-0.5 block w-full rounded-md border-0 bg-zinc-100 shadow-md ring-1 ring-inset ring-zinc-900/10 placeholder:text-zinc-400 hover:ring-zinc-900/20 focus:ring-2 focus:ring-inset focus:ring-zinc-900/40 focus:hover:ring-zinc-900/40 dark:bg-zinc-900 dark:ring-zinc-100/20 hover:dark:ring-zinc-100/30 focus:dark:ring-zinc-100/40 focus:hover:dark:ring-zinc-100/40"
+					placeholder="Locket" id="name" />
 			</div>
+			<div class="w-full">
+				<label for="username" class="block leading-6">Username</label>
+				<input name="password"
+					class="form-input mt-0.5 block w-full rounded-md border-0 bg-zinc-100 shadow-md ring-1 ring-inset ring-zinc-900/10 placeholder:text-zinc-500 hover:ring-zinc-900/20 focus:ring-2 focus:ring-inset focus:ring-zinc-900/40 focus:hover:ring-zinc-900/40 dark:bg-zinc-900 dark:ring-zinc-100/20 hover:dark:ring-zinc-100/30 focus:dark:ring-zinc-100/40 focus:hover:dark:ring-zinc-100/40"
+					placeholder="example@locket.uk" id="username" />
+			</div>
+			<div class="w-full">
+				<label for="password" class="block leading-6">Password</label>
+				<input name="password"
+					class="form-input mt-0.5 block w-full rounded-md border-0 bg-zinc-100 shadow-md ring-1 ring-inset ring-zinc-900/10 placeholder:text-zinc-500 hover:ring-zinc-900/20 focus:ring-2 focus:ring-inset focus:ring-zinc-900/40 focus:hover:ring-zinc-900/40 dark:bg-zinc-900 dark:ring-zinc-100/20 hover:dark:ring-zinc-100/30 focus:dark:ring-zinc-100/40 focus:hover:dark:ring-zinc-100/40"
+					placeholder="eJD6FMxr^y*@Vw@CzQGgc3nVW4rQsJ@feWjQMTpY7N@@#P^Kc$X3MN7" id="password" />
+			</div>
+			<button
+				class="focus:bg-zinc h-10 rounded-lg bg-zinc-100 px-3 align-middle shadow-md shadow-zinc-950/25 outline-none ring-1 ring-zinc-900/10 transition-all ease-in-out hover:bg-zinc-200 hover:ring-zinc-900/25 focus:ring-2 focus:ring-zinc-800 focus:ring-offset-2 focus:ring-offset-zinc-100 hover:focus:ring-zinc-800 dark:bg-zinc-800 dark:shadow-zinc-800/75 dark:ring-zinc-100/20 dark:hover:bg-zinc-900/80 dark:hover:ring-zinc-100/30 dark:focus:ring-zinc-100/60 dark:focus:ring-offset-zinc-900 dark:hover:focus:ring-zinc-100/60"
+				onclick="submit()">
+				Submit
+			</button>
 		</div>
-	</body>
+	</div>
+</body>
+
 </html>

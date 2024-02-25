@@ -17,17 +17,16 @@ use crate::models::Config;
 use args::Cli;
 use models::Database;
 
-static DATABASE_FILE_NAME: &str = "gondolin.db";
-static CONFIG_FILE_NAME: &str = "gondolin.toml";
-static LCK_FILE_NAME: &str = "gondolin.lck";
+static DATABASE_FILE_NAME: &str = "locket.db";
+static CONFIG_FILE_NAME: &str = "locket.toml";
+static LCK_FILE_NAME: &str = "locket.lck";
 
 // TODO: Extract the logic of opening and closing the config, database, and lockfile into either a set of functions, or an empty struct called
 // `Program` or something, which is responsible for all of this stuff. That would also improve the shutdown logic in `net::serve()`, and would
 // ensure that both functions stayed up to date. This is not especially urgent since it's just another abstraction which would overcomplicate
 // this project even more, but at some point this should be done.
 pub fn run(args: Cli) -> Result<()> {
-    let Some(proj_dirs) =
-        directories::ProjectDirs::from("com.github", "needlesslygrim", "Gondolin")
+    let Some(proj_dirs) = directories::ProjectDirs::from("com.github", "needlesslygrim", "Locket")
     else {
         bail!("Failed to get project directories")
     };
@@ -75,7 +74,7 @@ pub fn run(args: Cli) -> Result<()> {
     {
         match err.kind() {
             ErrorKind::AlreadyExists => {
-                eprintln!("An instance of Gondolin is already running, please kill it or wait for it to quit before trying to run another instance");
+                eprintln!("An instance of Locket is already running, please kill it or wait for it to quit before trying to run another instance");
                 std::process::exit(1);
             }
             _ => bail!("Failed to open the lockfile: {}", err),
