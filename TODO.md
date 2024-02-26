@@ -1,12 +1,16 @@
--   [x] Use URL query parameters instead of passing the query in the body of the GET request
--   [ ] Web interface
-    -   [x] Query logins
-    -   [x] Remove logins
-    -   [ ] Add logins
--   [ ] API
-    -   [ ] Initialise a database via the API
-    -   [x] Add logins via the API
-    -   [x] Query logins via the API
-    -   [ ] Remove logins via the API
-        -   [x] Remove a single login
-        -   [ ] Remove multiple logins
+- `src/web/query.ts:1`
+	 - TODO: https://alistapart.com/article/neveruseawarning/
+- `src/main.rs:7`
+	 - TODO: Find a way to exit properly, instead of using `std::process::exit()`.
+- `src/lib.rs:24`
+	 - TODO: Extract the logic of opening and closing the config, database, and lockfile into either a set of functions, or an empty struct called
+- `src/lib.rs:105`
+	 - TODO: Improve this message.
+- `src/web/card.html:5`
+	 - <!--FIXME: Fix the problems that arise when the name is empty-->
+- `src/net.rs:46`
+	 - TODO: Go through all of these functions, and check that they follow the proper behaviour, returning correct status codes, etc.
+- `src/net.rs:215`
+	 - TODO: Maybe look at checking the header to at least see if JSON was requested, and if not return 415 with `Accept-Post` set.
+- `src/models.rs:190`
+	 - TODO: However unlikely it is that there will be a collision, do proper things here.
