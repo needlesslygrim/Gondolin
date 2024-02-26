@@ -5,9 +5,9 @@ currently mostly finished. It is a small password manager with a CLI and web int
 ## Build instructions
 
 ```shell
-bun install
-bunx tailwindcss -i ./src/web/index.css -o ./dist/index.css
-cargo run
+$ pnpm install
+$ pnpx tailwindcss -i ./src/web/index.css -o ./dist/index.css
+$ cargo run
 ```
 
 ## Web Interface Architecture 
@@ -20,3 +20,22 @@ they are requested, but if we are in release-mode, then they are
 `include!`ed into the final binary. This approach was also stolen from Tsoding,
 but was stolen from his [musializer](https://github.com/tsoding/musializer)
 project where he implemented hot-reloading for C.
+
+# Roadmap
+- [ ] TUI?
+- [ ] Improved CLI deletion
+- [ ] Saving the website URL
+- [ ] OTP
+- [x] Use URL query parameters instead of passing the query in the body of the GET request
+- [ ] Web
+  - [ ] Web interface
+    - [x] Query logins
+    - [x] Remove logins
+    - [x] Add logins
+  - [ ] API
+    - [ ] Initialise a database via the API
+    - [x] Add logins via the API
+    - [x] Query logins via the API
+    - [ ] Remove logins via the API
+      - [x] Remove a single login
+      - [ ] Remove multiple logins
